@@ -6,10 +6,10 @@ parser = argparse.ArgumentParser(
         description = "Recursively create and check md5 checksums of directories",
         prog = 'album-md5')
 parser.add_argument('-c', '--check', action='store_true', help='check existing md5 files')
-parser.add_argument('-p', '--check-paths', action='store_true', help='only check existence of paths in md5 files, not checksums')
+parser.add_argument('-p', '--check-paths', action='store_true', help='only check paths in md5 files, not the checksums')
 parser.add_argument('-s', '--skip', action='store', default=0, type=int, metavar='n', help='skip given number of dirs (to resume an aborted run)')
 parser.add_argument('-q', '--quiet', action='count', default=0, help='less output (use twice for complete silence)')
-parser.add_argument('locations', metavar='dir', type=str, nargs='*', help='a list of directories to parse, use cwd if none given')
+parser.add_argument('locations', metavar='dir', type=str, nargs='*', help='a list of directories to parse (default is current dir)')
 args = parser.parse_args()
 
 # imply --check if only --check-paths was used
