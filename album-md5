@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import hashlib, os, argparse, sys
+import hashlib, os, argparse, sys, math
 
 parser = argparse.ArgumentParser(
         description = "Recursively create and check md5 checksums of directories",
@@ -136,9 +136,9 @@ def plural(number, singular, plural = ""):
         plural = singular[0:-1]+"ies"
 
     if plural:
-        return "{0} {1}".format(number, singular if number==1 else plural)
+        return singular if number==1 else plural
     else:
-        return "{0} {1}{2}".format(number, singular, "s" if number!=1 else "")
+        return singular+"s" if number!=1 else ""
 
 if not args.locations:
     args.locations.append(os.getcwd())
@@ -151,21 +151,50 @@ if dots:
     print()
     dots = False
 
-print("Hashed size: {0}, {1}".format(
-            hashedBytes, plural(dircount, "processed directory"),
-            " (including {0} skipped)".format(args.skip) if args.skip > 0 else "" ))
-output = plural(files, "file") + " processed."
+labels=[]
+values=[]
+
+labels.append(plural(dircount, "directory") + " processed")
+values.append(dircount)
+
+if args.skip > 0:
+    labels.append(plural(args.skip, "  skipped directory"))
+    values.append(args.skip)
+
+if nomd5 > 0:
+    labels.append(plural(nomd5, "  directory") + " without checksum file")
+    values.append(nomd5)
+
+labels.append(plural(files, "file") + " processed")
+values.append(files)
+
 if args.check:
     if not args.check_paths:
-        output += " {0} passed.".format("All checks" if passes==files else plural(passes, "check"))
-        if fails > 0:
-            output += " " + plural(fails, "check") + " failed."
-    if nomd5 > 0:
-        output += " " + plural(nomd5, "directory") + " without checksum file."
-    if notfound > 0:
-        output += " " + plural(notfound, "file") + " not listen in checksum file."
-print(output)
+        labels.append(plural(passes, "  check passed", "  checks passed"))
+        values.append(passes)
 
+        if fails > 0:
+            labels.append(plural(passes, "  check failed", "  checks failed"))
+            values.append(fails)
+
+    if notfound > 0:
+        labels.append(plural(notfound, "file") + " not listen in checksum file")
+        values.append(notfound)
+
+if not args.check_paths:
+    labels.append(plural(hashedBytes, "  hashed total filesize"))
+    values.append(hashedBytes)
+
+labelwidth = max(len(label) for label in labels)
+valuewidth = math.floor(max((math.log10(value) for value in values)))+1
+# that definitely is easier to accomplish
+formatstring = """{0:"""+str(labelwidth)+"""}: {1:>"""+str(valuewidth)+"""}"""
+
+if args.quiet != 2:
+    print("-" * (labelwidth + valuewidth + 2))
+
+for label, value in zip(labels, values):
+    print(formatstring.format(label, value))
 
 """ TODO:
 - improve ctrl+c behaviour
