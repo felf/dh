@@ -40,7 +40,7 @@ def processDir(path):
 
     if dirs:
         for d in dirs:
-            byteCount = byteCount + processDir(path+"/"+d)
+            byteCount += processDir(path+"/"+d)
         return byteCount
 
     filelist = [entry for entry in content if os.path.isfile(path + "/" + entry)]
@@ -104,7 +104,7 @@ def processDir(path):
                     notfound += 1
                 elif not args.check_paths:
                     checksums[f] = hashlib.md5(open(path + "/" + f, "rb").read()).hexdigest()
-                    byteCount = byteCount + os.path.getsize(path + "/" + f)
+                    byteCount += os.path.getsize(path + "/" + f)
                     if args.check:
                         if oldsum != checksums[f]:
                             if dots:
