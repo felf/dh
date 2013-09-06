@@ -35,15 +35,17 @@ def processDir(path):
 
     content = os.listdir(path)
     dirs = [entry for entry in content if os.path.isdir(path + "/" + entry)]
-    filelist = [entry for entry in content if os.path.isfile(path + "/" + entry)]
     dirs.sort()
-    filelist.sort()
     byteCount = 0
 
     if dirs:
         for d in dirs:
             byteCount = byteCount + processDir(path+"/"+d)
-    elif filelist and skip == 0:
+        return byteCount
+
+    filelist = [entry for entry in content if os.path.isfile(path + "/" + entry)]
+    filelist.sort()
+    if skip == 0:
         try:
             checksumIndex = filelist.index("Checksums.md5")
         except ValueError:
@@ -85,34 +87,33 @@ def processDir(path):
 
         checksums = {}
         oldsums = {}
-        if args.check:
-            if checksumIndex > -1:
-                for line in open(checksumsPath):
-                    oldsums[line[34:-1]] = line[:32]
-            else:
-                return 0;
+        if args.check and checksumIndex > -1:
+            for line in open(checksumsPath):
+                oldsums[line[34:-1]] = line[:32]
         
-        for f in filelist:
-            files += 1
-            oldsum = oldsums.get(f)
-            if args.check and not oldsum:
-                if dots:
-                    print()
-                    dots = False
-                print(">>> '{0}' not in existing MD5 file.".format(f), file=sys.stderr)
-                nomd5 += 1
-            elif not args.check_paths:
-                checksums[f] = hashlib.md5(open(path + "/" + f, "rb").read()).hexdigest()
-                byteCount = byteCount + os.path.getsize(path + "/" + f)
-                if args.check:
-                    if oldsum != checksums[f]:
-                        if dots:
-                            print()
-                            dots = False
-                        print(">>> '{0}': checksum error.".format(f), file=sys.stderr)
-                        fails += 1
-                    else:
-                        passes += 1
+        # only process files if needed
+        if not args.check or checksumIndex > -1:
+            for f in filelist:
+                files += 1
+                oldsum = oldsums.get(f)
+                if args.check and not oldsum:
+                    if dots:
+                        print()
+                        dots = False
+                    print(">>> '{0}' not in existing MD5 file.".format(f), file=sys.stderr)
+                    nomd5 += 1
+                elif not args.check_paths:
+                    checksums[f] = hashlib.md5(open(path + "/" + f, "rb").read()).hexdigest()
+                    byteCount = byteCount + os.path.getsize(path + "/" + f)
+                    if args.check:
+                        if oldsum != checksums[f]:
+                            if dots:
+                                print()
+                                dots = False
+                            print(">>> '{0}': checksum error.".format(f), file=sys.stderr)
+                            fails += 1
+                        else:
+                            passes += 1
 
         if not args.check:
             checksumFile = open(checksumsPath, "wt")
@@ -120,7 +121,9 @@ def processDir(path):
                 print("{0} *{1}".format(checksums[f], f), file=checksumFile)
             checksumFile.close()
 
-    if skip > 0: skip -= 1
+    else:
+        skip -= 1
+
     if filelist:
         dircount += 1
     return byteCount
