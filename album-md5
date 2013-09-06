@@ -8,6 +8,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument('-c', '--check', action='store_true', help='check existing md5 files')
 parser.add_argument('-p', '--check-paths', action='store_true', help='only check existence of paths in md5 files, not checksums')
 parser.add_argument('-s', '--skip', action='store', default=0, type=int, metavar='n', help='skip given number of dirs (to resume an aborted run)')
+parser.add_argument('-q', '--quiet', action='count', default=0, help='less output (use twice for complete silence)')
 parser.add_argument('locations', metavar='dir', type=str, nargs='*', help='a list of directories to parse, use cwd if none given')
 args = parser.parse_args()
 
@@ -27,9 +28,10 @@ notfound = 0
 overwrite_all = False
 skip_all = False
 cwd = os.getcwd()
+dots = False
 
 def processDir(path):
-    global cwd, dircount, skip, fails, files, passes, nomd5, notfound, overwrite_all, skip_all
+    global cwd, dircount, skip, fails, files, passes, nomd5, notfound, overwrite_all, skip_all, dots
 
     content = os.listdir(path)
     dirs = [entry for entry in content if os.path.isdir(path + "/" + entry)]
@@ -49,14 +51,24 @@ def processDir(path):
         if checksumIndex > -1:
             filelist = filelist[:checksumIndex] + filelist[checksumIndex+1:]
 
-        print("Processing {0:>2} files in {1}".format(len(filelist),
+        # full output: print number of files and name of directory
+        if args.quiet==0:
+            print("Processing {0:>2} files in {1}".format(len(filelist),
                     "."+path[len(cwd):] if path.startswith(cwd) else path))
+        # reduced output: only print a dot for each directory
+        elif args.quiet==1:
+            print(".", end="")
+            dots = True
 
         checksumsPath = path + "/Checksums.md5"
         if checksumIndex > -1 and not args.check:
             if skip_all:
                 return 0
             if not overwrite_all:
+                # put a newline behind the dots
+                if dots:
+                    print()
+                    dots = False
                 while True:
                     answer = input(">>> Checksums.md5 exists. (o)verwrite, o(v)erwrite all, (s)kip, skip al(l), (a)bort? ")
                     if answer.lower() in "ovsla":
@@ -84,15 +96,21 @@ def processDir(path):
             files += 1
             oldsum = oldsums.get(f)
             if args.check and not oldsum:
-               print(">>> '{0}' not in existing MD5 file.".format(f), file=sys.stderr)
-               nomd5 += 1
+                if dots:
+                    print()
+                    dots = False
+                print(">>> '{0}' not in existing MD5 file.".format(f), file=sys.stderr)
+                nomd5 += 1
             elif not args.check_paths:
                 checksums[f] = hashlib.md5(open(path + "/" + f, "rb").read()).hexdigest()
                 byteCount = byteCount + os.path.getsize(path + "/" + f)
                 if args.check:
                     if oldsum != checksums[f]:
-                       print(">>> '{0}': checksum error.".format(f), file=sys.stderr)
-                       fails += 1
+                        if dots:
+                            print()
+                            dots = False
+                        print(">>> '{0}': checksum error.".format(f), file=sys.stderr)
+                        fails += 1
                     else:
                         passes += 1
 
@@ -122,6 +140,10 @@ if not args.locations:
 for dir in args.locations:
     dir = os.path.abspath(dir)
     hashedBytes += processDir(dir)
+
+if dots:
+    print()
+    dots = False
 
 print("Hashed size: {0}, {1}".format(
             hashedBytes, plural(dircount, "processed directory"),
