@@ -101,7 +101,7 @@ def processDir(path):
                         print()
                         dots = False
                     print(">>> '{0}' not in existing MD5 file.".format(f), file=sys.stderr)
-                    nomd5 += 1
+                    notfound += 1
                 elif not args.check_paths:
                     checksums[f] = hashlib.md5(open(path + "/" + f, "rb").read()).hexdigest()
                     byteCount = byteCount + os.path.getsize(path + "/" + f)
@@ -157,8 +157,8 @@ if args.check:
         output += " {0} passed.".format("All checks" if passes==files else plural(passes, "check"))
         if fails > 0:
             output += " " + plural(fails, "check") + " failed."
-    if nomd5 > 0:
-        output += " " + plural(nomd5, "file") + " not listen in checksum file."
+    if notfound > 0:
+        output += " " + plural(notfound, "file") + " not listen in checksum file."
 print(output)
 
 
