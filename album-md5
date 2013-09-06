@@ -32,20 +32,20 @@ dots = False
 
 def processDir(path):
     global cwd, dircount, skip, fails, files, passes, nomd5, notfound, overwrite_all, skip_all, dots
+    byteCount = 0
 
     content = os.listdir(path)
     dirs = [entry for entry in content if os.path.isdir(path + "/" + entry)]
-    dirs.sort()
-    byteCount = 0
 
     if dirs:
+        dirs.sort()
         for d in dirs:
             byteCount += processDir(path+"/"+d)
         return byteCount
 
     filelist = [entry for entry in content if os.path.isfile(path + "/" + entry)]
-    filelist.sort()
     if skip == 0:
+        filelist.sort()
         try:
             checksumIndex = filelist.index("Checksums.md5")
         except ValueError:
