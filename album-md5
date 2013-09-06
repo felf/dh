@@ -60,6 +60,7 @@ def processDir(path):
         # reduced output: only print a dot for each directory
         elif args.quiet==1:
             print(".", end="")
+            sys.stdout.flush()
             dots = True
 
         checksumsPath = path + "/Checksums.md5"
