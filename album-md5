@@ -104,7 +104,8 @@ def processDir(path):
                     if dots:
                         print()
                         dots = False
-                    print(">>> '{0}' not in existing MD5 file.".format(f), file=sys.stderr)
+                    print(">>> '{0}' not in existing MD5 file." \
+                            .format(f if args.quiet == 0 else path + "/" + f), file=sys.stderr)
                     notfound += 1
                 elif not args.check_paths:
                     checksums[f] = hashlib.md5(open(path + "/" + f, "rb").read()).hexdigest()
@@ -191,7 +192,7 @@ valuewidth = math.floor(max((math.log10(value) for value in values)))+1
 # that definitely is easier to accomplish
 formatstring = """{0:"""+str(labelwidth)+"""}: {1:>"""+str(valuewidth)+"""}"""
 
-if args.quiet != 2:
+if args.quiet != 2 or notfound > 0:
     print("-" * (labelwidth + valuewidth + 2))
 
 for label, value in zip(labels, values):
