@@ -1,0 +1,142 @@
+#!/usr/bin/python3
+
+import hashlib, os, argparse, sys
+
+parser = argparse.ArgumentParser(
+        description = "Recursively create and check md5 checksums of directories",
+        prog = 'album-md5')
+parser.add_argument('-c', '--check', action='store_true', help='check existing md5 files')
+parser.add_argument('-p', '--check-paths', action='store_true', help='only check existence of paths in md5 files, not checksums')
+parser.add_argument('-s', '--skip', action='store', default=0, type=int, metavar='n', help='skip given number of dirs (to resume an aborted run)')
+parser.add_argument('locations', metavar='dir', type=str, nargs='*', help='a list of directories to parse, use cwd if none given')
+args = parser.parse_args()
+
+# imply --check if only --check-paths was used
+if args.check_paths and not args.check:
+    args.check = True
+
+skip = args.skip
+hashedBytes = 0
+dircount = 0
+# number of failed file checks
+fails = 0
+files = 0
+passes = 0
+nomd5 = 0
+notfound = 0
+overwrite_all = False
+skip_all = False
+cwd = os.getcwd()
+
+def processDir(path):
+    global cwd, dircount, skip, fails, files, passes, nomd5, notfound, overwrite_all, skip_all
+
+    content = os.listdir(path)
+    dirs = [entry for entry in content if os.path.isdir(path + "/" + entry)]
+    filelist = [entry for entry in content if os.path.isfile(path + "/" + entry)]
+    dirs.sort()
+    filelist.sort()
+    byteCount = 0
+
+    if dirs:
+        for d in dirs:
+            byteCount = byteCount + processDir(path+"/"+d)
+    elif filelist and skip == 0:
+        try:
+            checksumIndex = filelist.index("Checksums.md5")
+        except ValueError:
+            checksumIndex = -1
+        if checksumIndex > -1:
+            filelist = filelist[:checksumIndex] + filelist[checksumIndex+1:]
+
+        print("Processing {0:>2} files in {1}".format(len(filelist),
+                    "."+path[len(cwd):] if path.startswith(cwd) else path))
+
+        checksumsPath = path + "/Checksums.md5"
+        if checksumIndex > -1 and not args.check:
+            if skip_all:
+                return 0
+            if not overwrite_all:
+                while True:
+                    answer = input(">>> Checksums.md5 exists. (o)verwrite, o(v)erwrite all, (s)kip, skip al(l), (a)bort? ")
+                    if answer.lower() in "ovsla":
+                        break
+                if answer == "v":
+                    overwrite_all = True
+                elif answer == "a":
+                    exit(1)
+                elif answer == "l":
+                    skip_all = True
+                    return 0
+                elif answer == "s":
+                    return 0
+
+        checksums = {}
+        oldsums = {}
+        if args.check:
+            if checksumIndex > -1:
+                for line in open(checksumsPath):
+                    oldsums[line[34:-1]] = line[:32]
+            else:
+                return 0;
+        
+        for f in filelist:
+            files += 1
+            oldsum = oldsums.get(f)
+            if args.check and not oldsum:
+               print(">>> '{0}' not in existing MD5 file.".format(f), file=sys.stderr)
+               nomd5 += 1
+            elif not args.check_paths:
+                checksums[f] = hashlib.md5(open(path + "/" + f, "rb").read()).hexdigest()
+                byteCount = byteCount + os.path.getsize(path + "/" + f)
+                if args.check:
+                    if oldsum != checksums[f]:
+                       print(">>> '{0}': checksum error.".format(f), file=sys.stderr)
+                       fails += 1
+                    else:
+                        passes += 1
+
+        if not args.check:
+            checksumFile = open(checksumsPath, "wt")
+            for f in filelist:
+                print("{0} *{1}".format(checksums[f], f), file=checksumFile)
+            checksumFile.close()
+
+    if skip > 0: skip -= 1
+    if filelist:
+        dircount += 1
+    return byteCount
+
+def plural(number, singular, plural = ""):
+    if singular[-1]=="y" and not plural:
+        plural = singular[0:-1]+"ies"
+
+    if plural:
+        return "{0} {1}".format(number, singular if number==1 else plural)
+    else:
+        return "{0} {1}{2}".format(number, singular, "s" if number!=1 else "")
+
+if not args.locations:
+    args.locations.append(os.getcwd())
+
+for dir in args.locations:
+    dir = os.path.abspath(dir)
+    hashedBytes += processDir(dir)
+
+print("Hashed size: {0}, {1}".format(
+            hashedBytes, plural(dircount, "processed directory"),
+            " (including {0} skipped)".format(args.skip) if args.skip > 0 else "" ))
+output = plural(files, "file") + " processed."
+if args.check:
+    if not args.check_paths:
+        output += " {0} passed.".format("All checks" if passes==files else plural(passes, "check"))
+        if fails > 0:
+            output += " " + plural(fails, "check") + " failed."
+    if nomd5 > 0:
+        output += " " + plural(nomd5, "file") + " not listen in checksum file."
+print(output)
+
+
+""" TODO:
+- improve ctrl+c behaviour
+"""
