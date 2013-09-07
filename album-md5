@@ -191,7 +191,7 @@ if not args.check_paths:
     values.append(hashedBytes)
 
 labelwidth = max(len(label) for label in labels)
-valuewidth = math.floor(max((math.log10(value) for value in values)))+1
+valuewidth = math.floor(max(0 if value==0 else math.log10(value) for value in values))+1
 # that definitely is easier to accomplish
 formatstring = """{0:"""+str(labelwidth)+"""}: {1:>"""+str(valuewidth)+"""}"""
 
