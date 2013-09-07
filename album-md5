@@ -13,7 +13,7 @@ parser = argparse.ArgumentParser(
         prog = 'album-md5')
 group = parser.add_mutually_exclusive_group()
 group.add_argument('-c', '--create', action='store_true', help='create MD5 checksum files')
-group.add_argument('-p', '--check-paths', action='store_true', help='only check paths, don\'t compare checksums')
+group.add_argument('-p', '--paths', action='store_true', help='only check paths, don\'t compare checksums (faster)')
 parser.add_argument('-s', '--skip', action='store', default=0, type=int, metavar='n', help='skip given number of dirs (to resume an aborted run)')
 parser.add_argument('-n', '--number', action='store', default=-1, type=int, metavar='n', help='only process this many dirs (after the skipped ones)')
 parser.add_argument('-q', '--quiet', action='count', default=0, help='less progress output (use twice for complete silence)')
@@ -116,7 +116,7 @@ def processDir(path):
                     print(">>> '{0}' not in existing MD5 file." \
                             .format(f if args.quiet == 0 else path + "/" + f), file=sys.stderr)
                     notfound += 1
-                elif not args.check_paths:
+                elif not args.paths:
                     checksums[f] = hashlib.md5(open(path + "/" + f, "rb").read()).hexdigest()
                     byteCount += os.path.getsize(path + "/" + f)
                     if not args.create:
@@ -193,7 +193,7 @@ labels.append(plural(files, "file") + " processed")
 values.append(files)
 
 if not args.create:
-    if not args.check_paths:
+    if not args.paths:
         labels.append(plural(passes, "  check passed", "  checks passed"))
         values.append(passes)
 
@@ -205,7 +205,7 @@ if not args.create:
         labels.append(plural(notfound, "file") + " not listen in checksum file")
         values.append(notfound)
 
-if not args.check_paths:
+if not args.paths:
     labels.append(plural(hashedBytes, "  hashed total filesize"))
     values.append(hashedBytes)
 
