@@ -151,9 +151,18 @@ def plural(number, singular, plural = ""):
 if not args.locations:
     args.locations.append(os.getcwd())
 
-for dir in args.locations:
-    dir = os.path.abspath(dir)
-    hashedBytes += processDir(dir)
+try:
+    for dir in args.locations:
+        dir = os.path.abspath(dir)
+        hashedBytes += processDir(dir)
+except KeyboardInterrupt:
+    if dots:
+        print()
+        dots = False
+    if args.create:
+        print("\nHashing aborted.")
+    else:
+        print("\nCheck aborted.")
 
 if dots:
     print()
