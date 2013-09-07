@@ -5,17 +5,14 @@ import hashlib, os, argparse, sys, math
 parser = argparse.ArgumentParser(
         description = "Recursively create and check md5 checksums of directories",
         prog = 'album-md5')
-parser.add_argument('-c', '--check', action='store_true', help='check existing md5 files')
-parser.add_argument('-p', '--check-paths', action='store_true', help='only check paths in md5 files, not the checksums')
+group = parser.add_argument_group(title="mode")
+group.add_argument('-c', '--create', action='store_true', help='create MD5 checksum files')
+group.add_argument('-p', '--check-paths', action='store_true', help='only check paths in md5 files, not the checksums')
 parser.add_argument('-s', '--skip', action='store', default=0, type=int, metavar='n', help='skip given number of dirs (to resume an aborted run)')
 parser.add_argument('-q', '--quiet', action='count', default=0, help='less output (use twice for complete silence)')
 parser.add_argument('-f', '--force', action='store_true', help='force processing of files in dirs with subdirs')
 parser.add_argument('locations', metavar='dir', type=str, nargs='*', help='a list of directories to parse (default is current dir)')
 args = parser.parse_args()
-
-# imply --check if only --check-paths was used
-if args.check_paths and not args.check:
-    args.check = True
 
 skip = args.skip
 hashedBytes = 0
@@ -66,7 +63,7 @@ def processDir(path):
             dots = True
 
         checksumsPath = path + "/Checksums.md5"
-        if checksumIndex > -1 and not args.check:
+        if checksumIndex > -1 and args.create:
             if skip_all:
                 return 0
             if not overwrite_all:
@@ -90,7 +87,7 @@ def processDir(path):
 
         checksums = {}
         oldsums = {}
-        if args.check:
+        if not args.create:
             if checksumIndex > -1:
                 for line in open(checksumsPath):
                     oldsums[line[34:-1]] = line[:32]
@@ -98,11 +95,11 @@ def processDir(path):
                 nomd5 += 1
         
         # only process files if needed
-        if not args.check or checksumIndex > -1:
+        if args.create or checksumIndex > -1:
             for f in filelist:
                 files += 1
                 oldsum = oldsums.get(f)
-                if args.check and not oldsum:
+                if not (args.create or oldsum):
                     if dots:
                         print()
                         dots = False
@@ -112,7 +109,7 @@ def processDir(path):
                 elif not args.check_paths:
                     checksums[f] = hashlib.md5(open(path + "/" + f, "rb").read()).hexdigest()
                     byteCount += os.path.getsize(path + "/" + f)
-                    if args.check:
+                    if not args.create:
                         if oldsum != checksums[f]:
                             if dots:
                                 print()
@@ -122,7 +119,7 @@ def processDir(path):
                         else:
                             passes += 1
 
-        if not args.check:
+        if args.create:
             if filelist:
                 checksumFile = open(checksumsPath, "wt")
                 for f in filelist:
@@ -173,7 +170,7 @@ if nomd5 > 0:
 labels.append(plural(files, "file") + " processed")
 values.append(files)
 
-if args.check:
+if not args.create:
     if not args.check_paths:
         labels.append(plural(passes, "  check passed", "  checks passed"))
         values.append(passes)
