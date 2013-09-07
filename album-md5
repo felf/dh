@@ -121,10 +121,11 @@ def processDir(path):
                             passes += 1
 
         if not args.check:
-            checksumFile = open(checksumsPath, "wt")
-            for f in filelist:
-                print("{0} *{1}".format(checksums[f], f), file=checksumFile)
-            checksumFile.close()
+            if filelist:
+                checksumFile = open(checksumsPath, "wt")
+                for f in filelist:
+                    print("{0} *{1}".format(checksums[f], f), file=checksumFile)
+                checksumFile.close()
 
     else:
         skip -= 1
