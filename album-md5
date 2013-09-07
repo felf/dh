@@ -9,6 +9,7 @@ parser.add_argument('-c', '--check', action='store_true', help='check existing m
 parser.add_argument('-p', '--check-paths', action='store_true', help='only check paths in md5 files, not the checksums')
 parser.add_argument('-s', '--skip', action='store', default=0, type=int, metavar='n', help='skip given number of dirs (to resume an aborted run)')
 parser.add_argument('-q', '--quiet', action='count', default=0, help='less output (use twice for complete silence)')
+parser.add_argument('-f', '--force', action='store_true', help='force processing of files in dirs with subdirs')
 parser.add_argument('locations', metavar='dir', type=str, nargs='*', help='a list of directories to parse (default is current dir)')
 args = parser.parse_args()
 
@@ -41,7 +42,8 @@ def processDir(path):
         dirs.sort()
         for d in dirs:
             byteCount += processDir(path+"/"+d)
-        return byteCount
+        if not args.force:
+            return byteCount
 
     filelist = [entry for entry in content if os.path.isfile(path + "/" + entry)]
     if skip == 0:
