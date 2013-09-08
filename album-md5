@@ -81,17 +81,14 @@ def processDir(path):
 
         filelist.sort()
         # see if checksum file exists
-        try:
-            checksumIndex = filelist.index("Checksums.md5")
-        except ValueError:
-            checksumIndex = -1
-        if checksumIndex > -1:
+        md5exists = "Checksums.md5" in filelist
+        if md5exists:
             # and remove it from the list of files to process
-            filelist = filelist[:checksumIndex] + filelist[checksumIndex+1:]
+            filelist.remove("Checksums.md5")
 
         # full output mode: print number of files and name of directory
         if args.quiet==0:
-            if checksumIndex > -1 or args.create:
+            if md5exists or args.create:
                 print("Processing {0:>2} files in {1}".format(len(filelist),
                         "."+path[len(cwd):] if path.startswith(cwd) else path))
             else:
@@ -104,7 +101,7 @@ def processDir(path):
             dots = True
 
         # the checksum file will be overwritten -> ask how to proceed
-        if checksumIndex > -1 and args.create:
+        if md5exists and args.create:
             if skip_all:
                 return 0
             if not overwrite_all:
@@ -131,7 +128,7 @@ def processDir(path):
         oldsums = {}
         # read entries in MD5 file
         if not args.create:
-            if checksumIndex > -1:
+            if md5exists:
                 for line in open(checksumsPath):
                     oldsums[line[34:-1]] = line[:32]
                 for file in oldsums:
@@ -146,7 +143,7 @@ def processDir(path):
                 md5missing += 1
         
         # only process files if needed (i.e. being hashed or checked against existing MD5)
-        if args.create or checksumIndex > -1:
+        if args.create or md5exists:
             for f in filelist:
                 files += 1
 
