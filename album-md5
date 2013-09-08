@@ -224,8 +224,7 @@ if dots:
     dots = False
 
 # output stuff, left and right column
-labels=[]
-values=[]
+labels, values = [], []
 
 labels.append(plural(dircount, "directory") + " processed")
 values.append(dircount)
