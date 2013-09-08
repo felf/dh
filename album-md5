@@ -136,6 +136,9 @@ def processDir(path):
                     oldsums[line[34:-1]] = line[:32]
                 for file in oldsums:
                     if not file in filelist:
+                        if dots:
+                            print()
+                            dots = False
                         print(">>> '{0}' from MD5 file does not exist." \
                                 .format(file if args.quiet == 0 else path + "/" + file), file=sys.stderr)
                         filesmissing += 1
