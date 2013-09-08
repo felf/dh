@@ -55,6 +55,10 @@ question_asked = False
 # whether the last thing printed was a progress dot (i.e. without line break)
 dots = False
 
+# handle exceeding number of -q parameters
+if args.quiet > 2:
+    args.quiet = 2
+
 cwd = os.getcwd()
 
 
