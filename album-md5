@@ -119,6 +119,7 @@ def processDir(path):
         if args.create or checksumIndex > -1:
             for f in filelist:
                 files += 1
+
                 oldsum = oldsums.get(f)
                 if not (args.create or oldsum):
                     if dots:
@@ -127,6 +128,7 @@ def processDir(path):
                     print(">>> '{0}' not in existing MD5 file." \
                             .format(f if args.quiet == 0 else path + "/" + f), file=sys.stderr)
                     notfound += 1
+                    files -= 1
                 elif not args.paths:
                     checksums[f] = hashlib.md5(open(path + "/" + f, "rb").read()).hexdigest()
                     byteCount += os.path.getsize(path + "/" + f)
