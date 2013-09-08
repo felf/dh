@@ -298,3 +298,6 @@ if args.quiet < 2 or not_in_md5 or files_missing or md5_missing or question_aske
 # print results
 for label, value in zip(labels, values):
     print(formatstring.format(label, value))
+
+if fails or files_missing or not_in_md5 or md5_missing:
+    exit(1)
