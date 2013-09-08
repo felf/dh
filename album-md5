@@ -38,7 +38,7 @@ passes = 0
 # number of files listed in md5, but physically missing
 filesmissing = 0
 # number of files not listed in existing md5 file
-notfound = 0
+notinmd5 = 0
 # number of matching directories without md5 file
 md5missing = 0
 
@@ -55,7 +55,7 @@ cwd = os.getcwd()
 
 # main recursive function
 def processDir(path):
-    global cwd, dircount, skip, fails, files, filesmissing, passes, md5missing, notfound, overwrite_all, skip_all, dots
+    global cwd, dircount, skip, fails, files, filesmissing, passes, md5missing, notinmd5, overwrite_all, skip_all, dots
     byteCount = 0
 
     # recursive part: go through all subdirs
@@ -155,7 +155,7 @@ def processDir(path):
                         dots = False
                     print(">>> '{0}' not in existing MD5 file." \
                             .format(f if args.quiet == 0 else path + "/" + f), file=sys.stderr)
-                    notfound += 1
+                    notinmd5 += 1
                     # that file doesn't count as it doesn't have to be processed
                     files -= 1
                 # want to create or check the md5
@@ -255,9 +255,9 @@ if not args.paths:
     values.append(hashedBytes)
 
 if not args.create:
-    if notfound > 0:
-        labels.append(plural(notfound, "file") + " not listen in checksum file")
-        values.append(notfound)
+    if notinmd5 > 0:
+        labels.append(plural(notinmd5, "file") + " not listen in checksum file")
+        values.append(notinmd5)
 
     if filesmissing > 0:
         labels.append(plural(filesmissing, "file") + " missing")
@@ -270,7 +270,7 @@ valuewidth = math.floor(max(0 if value==0 else math.log10(value) for value in va
 formatstring = """{0:"""+str(labelwidth)+"""}: {1:>"""+str(valuewidth)+"""}"""
 
 # separation line between process output and result table
-if args.quiet != 2 or notfound > 0:
+if args.quiet != 2 or notinmd5 > 0:
     print("-" * (labelwidth + valuewidth + 2))
 
 # print results
