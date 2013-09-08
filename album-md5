@@ -40,7 +40,7 @@ filesmissing = 0
 # number of files not listed in existing md5 file
 notfound = 0
 # number of matching directories without md5 file
-nomd5 = 0
+md5missing = 0
 
 # answer flags for the question about already existing md5 files
 # overwrite all following md5 collisions
@@ -55,7 +55,7 @@ cwd = os.getcwd()
 
 # main recursive function
 def processDir(path):
-    global cwd, dircount, skip, fails, files, filesmissing, passes, nomd5, notfound, overwrite_all, skip_all, dots
+    global cwd, dircount, skip, fails, files, filesmissing, passes, md5missing, notfound, overwrite_all, skip_all, dots
     byteCount = 0
 
     # recursive part: go through all subdirs
@@ -140,7 +140,7 @@ def processDir(path):
                                 .format(file if args.quiet == 0 else path + "/" + file), file=sys.stderr)
                         filesmissing += 1
             elif filelist:
-                nomd5 += 1
+                md5missing += 1
         
         # only process files if needed (i.e. being hashed or checked against existing MD5)
         if args.create or checksumIndex > -1:
@@ -234,9 +234,9 @@ if args.skip > 0:
     labels.append("  of which skipped at the beginning")
     values.append(args.skip)
 
-if nomd5 > 0:
-    labels.append(plural(nomd5, "  directory") + " without checksum file")
-    values.append(nomd5)
+if md5missing > 0:
+    labels.append(plural(md5missing, "  directory") + " without checksum file")
+    values.append(md5missing)
 
 labels.append(plural(files, "file") + " processed")
 values.append(files)
