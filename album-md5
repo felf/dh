@@ -23,24 +23,24 @@ args = parser.parse_args()
 
 # counting variables for the main recursion
 # -----------------------------------------
-# number of matching directories to skip at the beginning
-skip = args.skip
-# summed size of all hashed files
-hashedBytes = 0
 # number of matching directories (i.e. those that contain files to process)
 dircount = 0
-# number of failed md5 checks
-fails = 0
+# number of matching directories to skip at the beginning
+skip = args.skip
 # number of files processed
 files = 0
-# number of files listed in md5, but physically missing
-filesmissing = 0
+# summed size of all hashed files
+hashedBytes = 0
+# number of failed md5 checks
+fails = 0
 # number of passed md5 checks
 passes = 0
-# number of matching directories without md5 file
-nomd5 = 0
+# number of files listed in md5, but physically missing
+filesmissing = 0
 # number of files not listed in existing md5 file
 notfound = 0
+# number of matching directories without md5 file
+nomd5 = 0
 
 # answer flags for the question about already existing md5 files
 # overwrite all following md5 collisions
@@ -48,11 +48,10 @@ overwrite_all = False
 # skip all following directories with md5 collisions
 skip_all = False
 
-cwd = os.getcwd()
-
 # whether the last thing printed was a progress dot (i.e. without line break)
 dots = False
 
+cwd = os.getcwd()
 
 # main recursive function
 def processDir(path):
@@ -71,8 +70,11 @@ def processDir(path):
 
     # leaf part: process files
     filelist = [entry for entry in content if os.path.isfile(path + "/" + entry)]
-    # only if this dir is not part of the first x to skip
-    if skip == 0:
+
+    # only process if this dir is not part of the first x to skip
+    if skip > 0:
+        skip -= 1
+    else:
         # abort processing here if given dir limit is reached
         if args.number == 0:
             return 0
@@ -101,7 +103,6 @@ def processDir(path):
             sys.stdout.flush()
             dots = True
 
-        checksumsPath = path + "/Checksums.md5"
         # the checksum file will be overwritten -> ask how to proceed
         if checksumIndex > -1 and args.create:
             if skip_all:
@@ -125,6 +126,7 @@ def processDir(path):
                 elif answer == "s":
                     return 0
 
+        checksumsPath = path + "/Checksums.md5"
         checksums = {}
         oldsums = {}
         # read entries in MD5 file
@@ -147,7 +149,7 @@ def processDir(path):
 
                 oldsum = oldsums.get(f)
                 # want to check, but file does not exist in MD5
-                if not (args.create or oldsum):
+                if not args.create and not oldsum:
                     if dots:
                         print()
                         dots = False
@@ -181,9 +183,6 @@ def processDir(path):
         # decrease counter for fixed number of dirs to process
         if args.number>-1:
             args.number -= 1
-
-    else:
-        skip -= 1
 
     # count directory as processed if it contains processed files
     if filelist:
