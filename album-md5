@@ -33,8 +33,6 @@ limit = args.number
 skipped_overwrites = 0
 # number of files processed
 files = 0
-# summed size of all hashed files
-hashed_bytes = 0
 # number of failed md5 checks
 fails = 0
 # number of passed md5 checks
@@ -61,7 +59,7 @@ cwd = os.getcwd()
 # main recursive function
 def processDir(path):
     global cwd, dircount, fails, files, files_missing, limit, md5_missing, not_in_md5, passes, skip, skipped_overwrites, overwrite_all, skip_all, dots
-    byteCount = 0
+    hashed_bytes = 0
 
     # recursive part: go through all subdirs
     content = os.listdir(path)
@@ -69,9 +67,9 @@ def processDir(path):
     if dirs:
         dirs.sort()
         for d in dirs:
-            byteCount += processDir(path+"/"+d)
+            hashed_bytes += processDir(path+"/"+d)
         if not args.force:
-            return byteCount
+            return hashed_bytes
 
     # leaf part: process files
     filelist = [entry for entry in content if os.path.isfile(path + "/" + entry)]
@@ -169,7 +167,7 @@ def processDir(path):
                 # want to create or check the md5
                 elif not args.paths:
                     checksums[f] = hashlib.md5(open(path + "/" + f, "rb").read()).hexdigest()
-                    byteCount += os.path.getsize(path + "/" + f)
+                    hashed_bytes += os.path.getsize(path + "/" + f)
                     if not args.create:
                         if oldsum != checksums[f]:
                             if dots:
@@ -195,7 +193,7 @@ def processDir(path):
     # count directory as processed if it contains processed files
     if filelist:
         dircount += 1
-    return byteCount
+    return hashed_bytes
 
 # print plural forms of words depending on assiociated number
 def plural(number, singular, plural = ""):
@@ -212,6 +210,8 @@ def plural(number, singular, plural = ""):
 # use current dir if no dir to process was given
 if not args.locations:
     args.locations.append(os.getcwd())
+
+hashed_bytes = 0
 
 # recurse every passed directory
 try:
