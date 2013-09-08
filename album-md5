@@ -49,6 +49,8 @@ md5_missing = 0
 overwrite_all = False
 # skip all following directories with md5 collisions
 skip_all = False
+# whether a question was asked (which means there was output)
+question_asked = False
 
 # whether the last thing printed was a progress dot (i.e. without line break)
 dots = False
@@ -61,7 +63,7 @@ class RecursionException(Exception):
 
 # main recursive function
 def processDir(path):
-    global cwd, dircount, fails, files, files_missing, limit, md5_missing, not_in_md5, passes, skip, skipped_overwrites, overwrite_all, skip_all, dots
+    global cwd, dircount, fails, files, files_missing, limit, md5_missing, not_in_md5, passes, skip, skipped_overwrites, overwrite_all, skip_all, question_asked, dots
     hashed_bytes = 0
 
     # recursive part: go through all subdirs
@@ -117,6 +119,7 @@ def processDir(path):
                     print()
                     dots = False
                 while True:
+                    question_asked = True
                     answer = input(">>> Checksums.md5 exists: (O)verwrite, o(v)erwrite all, (s)kip, skip al(l), (a)bort? ")
                     if answer.lower() in "ovsla":
                         break
@@ -285,7 +288,7 @@ valuewidth = math.floor(max(0 if value==0 else math.log10(value) for value in va
 formatstring = """{0:"""+str(labelwidth)+"""}: {1:>"""+str(valuewidth)+"""}"""
 
 # separation line between process output and result table
-if args.quiet != 2 or not_in_md5 > 0:
+if args.quiet < 2 or not_in_md5 or files_missing or md5_missing or question_asked:
     print("-" * (labelwidth + valuewidth + 2))
 
 # print results
