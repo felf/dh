@@ -110,7 +110,7 @@ def processDir(path):
                     print()
                     dots = False
                 while True:
-                    answer = input(">>> Checksums.md5 exists. (o)verwrite, o(v)erwrite all, (s)kip, skip al(l), (a)bort? ")
+                    answer = input(">>> Checksums.md5 exists: (O)verwrite, o(v)erwrite all, (s)kip, skip al(l), (a)bort? ")
                     if answer.lower() in "ovsla":
                         break
                 if answer == "v":
