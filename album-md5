@@ -130,8 +130,8 @@ def processDir(path):
         if not args.create:
             if md5exists:
                 for line in open(checksumsPath):
-                    oldsums[line[34:-1]] = line[:32]
-                for file in oldsums:
+                    file, md5 = line[34:-1], line[:32]
+                    oldsums[file] = md5
                     if not file in filelist:
                         if dots:
                             print()
