@@ -181,10 +181,9 @@ def processDir(path):
         # write ne checksum file
         if args.create:
             if filelist:
-                md5_file = open(checksums_path, "wt")
-                for f in filelist:
-                    print("{0} *{1}".format(checksums[f], f), file = md5_file)
-                md5_file.close()
+                with open(checksums_path, "wt") as md5_file:
+                    for f in filelist:
+                        print("{0} *{1}".format(checksums[f], f), file = md5_file)
 
         # decrease counter for fixed number of dirs to process
         if limit > -1:
