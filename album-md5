@@ -30,21 +30,21 @@ skip = args.skip
 # number of matching directories after which to exit
 limit = args.number
 # number of directories skipped due to answer to overwrite question
-skippedOverwrites = 0
+skipped_overwrites = 0
 # number of files processed
 files = 0
 # summed size of all hashed files
-hashedBytes = 0
+hashed_bytes = 0
 # number of failed md5 checks
 fails = 0
 # number of passed md5 checks
 passes = 0
 # number of files listed in md5, but physically missing
-filesmissing = 0
+files_missing = 0
 # number of files not listed in existing md5 file
-notinmd5 = 0
+not_in_md5 = 0
 # number of matching directories without md5 file
-md5missing = 0
+md5_missing = 0
 
 # answer flags for the question about already existing md5 files
 # overwrite all following md5 collisions
@@ -60,7 +60,7 @@ cwd = os.getcwd()
 
 # main recursive function
 def processDir(path):
-    global cwd, dircount, fails, files, filesmissing, limit, md5missing, notinmd5, passes, skip, skippedOverwrites, overwrite_all, skip_all, dots
+    global cwd, dircount, fails, files, files_missing, limit, md5_missing, not_in_md5, passes, skip, skipped_overwrites, overwrite_all, skip_all, dots
     byteCount = 0
 
     # recursive part: go through all subdirs
@@ -108,7 +108,7 @@ def processDir(path):
         # the checksum file will be overwritten -> ask how to proceed
         if md5exists and args.create:
             if skip_all:
-                skippedOverwrites += 1
+                skipped_overwrites += 1
                 return 0
             if not overwrite_all:
                 # put a newline behind the dots
@@ -125,19 +125,19 @@ def processDir(path):
                     exit(1)
                 elif answer == "l":
                     skip_all = True
-                    skippedOverwrites += 1
+                    skipped_overwrites += 1
                     return 0
                 elif answer == "s":
-                    skippedOverwrites += 1
+                    skipped_overwrites += 1
                     return 0
 
-        checksumsPath = path + "/Checksums.md5"
+        checksums_path = path + "/Checksums.md5"
         checksums = {}
         oldsums = {}
         # read entries in MD5 file
         if not args.create:
             if md5exists:
-                for line in open(checksumsPath):
+                for line in open(checksums_path):
                     file, md5 = line[34:-1], line[:32]
                     oldsums[file] = md5
                     if not file in filelist:
@@ -146,9 +146,9 @@ def processDir(path):
                             dots = False
                         print(">>> '{0}' from MD5 file does not exist." \
                                 .format(file if args.quiet == 0 else path + "/" + file), file=sys.stderr)
-                        filesmissing += 1
+                        files_missing += 1
             elif filelist:
-                md5missing += 1
+                md5_missing += 1
         
         # only process files if needed (i.e. being hashed or checked against existing MD5)
         if args.create or md5exists:
@@ -163,7 +163,7 @@ def processDir(path):
                         dots = False
                     print(">>> '{0}' not in existing MD5 file." \
                             .format(f if args.quiet == 0 else path + "/" + f), file=sys.stderr)
-                    notinmd5 += 1
+                    not_in_md5 += 1
                     # that file doesn't count as it doesn't have to be processed
                     files -= 1
                 # want to create or check the md5
@@ -183,10 +183,10 @@ def processDir(path):
         # write ne checksum file
         if args.create:
             if filelist:
-                checksumFile = open(checksumsPath, "wt")
+                md5_file = open(checksums_path, "wt")
                 for f in filelist:
-                    print("{0} *{1}".format(checksums[f], f), file=checksumFile)
-                checksumFile.close()
+                    print("{0} *{1}".format(checksums[f], f), file = md5_file)
+                md5_file.close()
 
         # decrease counter for fixed number of dirs to process
         if limit > -1:
@@ -217,7 +217,7 @@ if not args.locations:
 try:
     for dir in args.locations:
         dir = os.path.abspath(dir)
-        hashedBytes += processDir(dir)
+        hashed_bytes += processDir(dir)
 except KeyboardInterrupt:
     if dots:
         print()
@@ -241,13 +241,13 @@ if args.skip > 0:
     labels.append("  of which skipped at the beginning")
     values.append(args.skip)
 
-if skippedOverwrites > 0:
+if skipped_overwrites > 0:
     labels.append("  of which skipped due to overwriting")
-    values.append(skippedOverwrites)
+    values.append(skipped_overwrites)
 
-if md5missing > 0:
-    labels.append(plural(md5missing, "  directory") + " without checksum file")
-    values.append(md5missing)
+if md5_missing > 0:
+    labels.append(plural(md5_missing, "  directory") + " without checksum file")
+    values.append(md5_missing)
 
 labels.append(plural(files, "file") + " processed")
 values.append(files)
@@ -263,16 +263,16 @@ if not args.create:
 
 if not args.paths:
     labels.append("  hashed bytes")
-    values.append(hashedBytes)
+    values.append(hashed_bytes)
 
 if not args.create:
-    if notinmd5 > 0:
-        labels.append(plural(notinmd5, "file") + " not listen in checksum file")
-        values.append(notinmd5)
+    if not_in_md5 > 0:
+        labels.append(plural(not_in_md5, "file") + " not listen in checksum file")
+        values.append(not_in_md5)
 
-    if filesmissing > 0:
-        labels.append(plural(filesmissing, "file") + " missing")
-        values.append(filesmissing)
+    if files_missing > 0:
+        labels.append(plural(files_missing, "file") + " missing")
+        values.append(files_missing)
 
 # get maximum width of items for both columns
 labelwidth = max(len(label) for label in labels)
@@ -281,7 +281,7 @@ valuewidth = math.floor(max(0 if value==0 else math.log10(value) for value in va
 formatstring = """{0:"""+str(labelwidth)+"""}: {1:>"""+str(valuewidth)+"""}"""
 
 # separation line between process output and result table
-if args.quiet != 2 or notinmd5 > 0:
+if args.quiet != 2 or not_in_md5 > 0:
     print("-" * (labelwidth + valuewidth + 2))
 
 # print results
