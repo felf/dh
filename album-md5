@@ -29,6 +29,8 @@ dircount = 0
 skip = args.skip
 # number of matching directories after which to exit
 limit = args.number
+# number of directories skipped due to answer to overwrite question
+skippedOverwrites = 0
 # number of files processed
 files = 0
 # summed size of all hashed files
@@ -57,7 +59,7 @@ cwd = os.getcwd()
 
 # main recursive function
 def processDir(path):
-    global cwd, dircount, skip, fails, files, filesmissing, limit, passes, md5missing, notinmd5, overwrite_all, skip_all, dots
+    global cwd, dircount, skip, skippedOverwrites, fails, files, filesmissing, limit, passes, md5missing, notinmd5, overwrite_all, skip_all, dots
     byteCount = 0
 
     # recursive part: go through all subdirs
@@ -105,6 +107,7 @@ def processDir(path):
         # the checksum file will be overwritten -> ask how to proceed
         if md5exists and args.create:
             if skip_all:
+                skippedOverwrites += 1
                 return 0
             if not overwrite_all:
                 # put a newline behind the dots
@@ -121,8 +124,10 @@ def processDir(path):
                     exit(1)
                 elif answer == "l":
                     skip_all = True
+                    skippedOverwrites += 1
                     return 0
                 elif answer == "s":
+                    skippedOverwrites += 1
                     return 0
 
         checksumsPath = path + "/Checksums.md5"
@@ -234,6 +239,10 @@ values.append(dircount)
 if args.skip > 0:
     labels.append("  of which skipped at the beginning")
     values.append(args.skip)
+
+if skippedOverwrites > 0:
+    labels.append("  of which skipped due to overwriting")
+    values.append(skippedOverwrites)
 
 if md5missing > 0:
     labels.append(plural(md5missing, "  directory") + " without checksum file")
