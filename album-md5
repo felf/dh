@@ -56,6 +56,9 @@ dots = False
 cwd = os.getcwd()
 
 
+class RecursionException(Exception):
+    pass
+
 # main recursive function
 def processDir(path):
     global cwd, dircount, fails, files, files_missing, limit, md5_missing, not_in_md5, passes, skip, skipped_overwrites, overwrite_all, skip_all, dots
@@ -120,7 +123,7 @@ def processDir(path):
                 if answer == "v":
                     overwrite_all = True
                 elif answer == "a":
-                    exit(1)
+                    raise RecursionException("aborted")
                 elif answer == "l":
                     skip_all = True
                     skipped_overwrites += 1
@@ -225,6 +228,8 @@ except KeyboardInterrupt:
         print("\nHashing aborted.")
     else:
         print("\nCheck aborted.")
+except RecursionException:
+    pass
 
 if dots:
     print()
