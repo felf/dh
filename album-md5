@@ -57,9 +57,10 @@ dots = False
 
 cwd = os.getcwd()
 
+
 # main recursive function
 def processDir(path):
-    global cwd, dircount, skip, skippedOverwrites, fails, files, filesmissing, limit, passes, md5missing, notinmd5, overwrite_all, skip_all, dots
+    global cwd, dircount, fails, files, filesmissing, limit, md5missing, notinmd5, passes, skip, skippedOverwrites, overwrite_all, skip_all, dots
     byteCount = 0
 
     # recursive part: go through all subdirs
