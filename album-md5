@@ -64,8 +64,12 @@ def processDir(path):
 
         # full output: print number of files and name of directory
         if args.quiet==0:
-            print("Processing {0:>2} files in {1}".format(len(filelist),
-                    "."+path[len(cwd):] if path.startswith(cwd) else path))
+            if checksumIndex > -1 or args.create:
+                print("Processing {0:>2} files in {1}".format(len(filelist),
+                        "."+path[len(cwd):] if path.startswith(cwd) else path))
+            else:
+                print("No checksum file in", "."+path[len(cwd):] if path.startswith(cwd) else path)
+
         # reduced output: only print a dot for each directory
         elif args.quiet==1:
             print(".", end="")
