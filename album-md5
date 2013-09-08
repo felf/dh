@@ -27,6 +27,8 @@ args = parser.parse_args()
 dircount = 0
 # number of matching directories to skip at the beginning
 skip = args.skip
+# number of matching directories after which to exit
+limit = args.number
 # number of files processed
 files = 0
 # summed size of all hashed files
@@ -55,7 +57,7 @@ cwd = os.getcwd()
 
 # main recursive function
 def processDir(path):
-    global cwd, dircount, skip, fails, files, filesmissing, passes, md5missing, notinmd5, overwrite_all, skip_all, dots
+    global cwd, dircount, skip, fails, files, filesmissing, limit, passes, md5missing, notinmd5, overwrite_all, skip_all, dots
     byteCount = 0
 
     # recursive part: go through all subdirs
@@ -76,7 +78,7 @@ def processDir(path):
         skip -= 1
     else:
         # abort processing here if given dir limit is reached
-        if args.number == 0:
+        if limit == 0:
             return 0
 
         filelist.sort()
@@ -181,8 +183,8 @@ def processDir(path):
                 checksumFile.close()
 
         # decrease counter for fixed number of dirs to process
-        if args.number>-1:
-            args.number -= 1
+        if limit > -1:
+            limit -= 1
 
     # count directory as processed if it contains processed files
     if filelist:
