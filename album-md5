@@ -161,10 +161,12 @@ def plural(number, singular, plural = ""):
     if singular[-1]=="y" and not plural:
         plural = singular[0:-1]+"ies"
 
-    if plural:
-        return singular if number==1 else plural
+    if number == 1:
+        return singular
+    elif plural:
+        return plural
     else:
-        return singular+"s" if number!=1 else ""
+        return singular+"s"
 
 if not args.locations:
     args.locations.append(os.getcwd())
