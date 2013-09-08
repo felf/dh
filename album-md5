@@ -21,28 +21,47 @@ parser.add_argument('-f', '--force', action='store_true', help='force processing
 parser.add_argument('locations', metavar='dir', type=str, nargs='*', help='a list of directories to parse (default is current dir)')
 args = parser.parse_args()
 
+# counting variables for the main recursion
+# -----------------------------------------
+# number of matching directories to skip at the beginning
 skip = args.skip
+# summed size of all hashed files
 hashedBytes = 0
+# number of matching directories (i.e. those that contain files to process)
 dircount = 0
-# number of failed file checks
+# number of failed md5 checks
 fails = 0
+# number of files processed
 files = 0
+# number of files listed in md5, but physically missing
 filesmissing = 0
+# number of passed md5 checks
 passes = 0
+# number of matching directories without md5 file
 nomd5 = 0
+# number of files not listed in existing md5 file
 notfound = 0
+
+# answer flags for the question about already existing md5 files
+# overwrite all following md5 collisions
 overwrite_all = False
+# skip all following directories with md5 collisions
 skip_all = False
+
 cwd = os.getcwd()
+
+# whether the last thing printed was a progress dot (i.e. without line break)
 dots = False
 
+
+# main recursive function
 def processDir(path):
     global cwd, dircount, skip, fails, files, filesmissing, passes, nomd5, notfound, overwrite_all, skip_all, dots
     byteCount = 0
 
+    # recursive part: go through all subdirs
     content = os.listdir(path)
     dirs = [entry for entry in content if os.path.isdir(path + "/" + entry)]
-
     if dirs:
         dirs.sort()
         for d in dirs:
@@ -50,20 +69,25 @@ def processDir(path):
         if not args.force:
             return byteCount
 
+    # leaf part: process files
     filelist = [entry for entry in content if os.path.isfile(path + "/" + entry)]
+    # only if this dir is not part of the first x to skip
     if skip == 0:
+        # abort processing here if given dir limit is reached
         if args.number == 0:
             return 0
 
         filelist.sort()
+        # see if checksum file exists
         try:
             checksumIndex = filelist.index("Checksums.md5")
         except ValueError:
             checksumIndex = -1
         if checksumIndex > -1:
+            # and remove it from the list of files to process
             filelist = filelist[:checksumIndex] + filelist[checksumIndex+1:]
 
-        # full output: print number of files and name of directory
+        # full output mode: print number of files and name of directory
         if args.quiet==0:
             if checksumIndex > -1 or args.create:
                 print("Processing {0:>2} files in {1}".format(len(filelist),
@@ -78,6 +102,7 @@ def processDir(path):
             dots = True
 
         checksumsPath = path + "/Checksums.md5"
+        # the checksum file will be overwritten -> ask how to proceed
         if checksumIndex > -1 and args.create:
             if skip_all:
                 return 0
@@ -109,18 +134,19 @@ def processDir(path):
                     oldsums[line[34:-1]] = line[:32]
                 for file in oldsums:
                     if not file in filelist:
-                        print(">>> '{0}' does not exist." \
+                        print(">>> '{0}' from MD5 file does not exist." \
                                 .format(file if args.quiet == 0 else path + "/" + file), file=sys.stderr)
                         filesmissing += 1
             elif filelist:
                 nomd5 += 1
         
-        # only process files if needed
+        # only process files if needed (i.e. being hashed or checked against existing MD5)
         if args.create or checksumIndex > -1:
             for f in filelist:
                 files += 1
 
                 oldsum = oldsums.get(f)
+                # want to check, but file does not exist in MD5
                 if not (args.create or oldsum):
                     if dots:
                         print()
@@ -128,7 +154,9 @@ def processDir(path):
                     print(">>> '{0}' not in existing MD5 file." \
                             .format(f if args.quiet == 0 else path + "/" + f), file=sys.stderr)
                     notfound += 1
+                    # that file doesn't count as it doesn't have to be processed
                     files -= 1
+                # want to create or check the md5
                 elif not args.paths:
                     checksums[f] = hashlib.md5(open(path + "/" + f, "rb").read()).hexdigest()
                     byteCount += os.path.getsize(path + "/" + f)
@@ -142,6 +170,7 @@ def processDir(path):
                         else:
                             passes += 1
 
+        # write ne checksum file
         if args.create:
             if filelist:
                 checksumFile = open(checksumsPath, "wt")
@@ -149,16 +178,19 @@ def processDir(path):
                     print("{0} *{1}".format(checksums[f], f), file=checksumFile)
                 checksumFile.close()
 
+        # decrease counter for fixed number of dirs to process
         if args.number>-1:
             args.number -= 1
 
     else:
         skip -= 1
 
+    # count directory as processed if it contains processed files
     if filelist:
         dircount += 1
     return byteCount
 
+# print plural forms of words depending on assiociated number
 def plural(number, singular, plural = ""):
     if singular[-1]=="y" and not plural:
         plural = singular[0:-1]+"ies"
@@ -170,9 +202,11 @@ def plural(number, singular, plural = ""):
     else:
         return singular+"s"
 
+# use current dir if no dir to process was given
 if not args.locations:
     args.locations.append(os.getcwd())
 
+# recurse every passed directory
 try:
     for dir in args.locations:
         dir = os.path.abspath(dir)
@@ -190,6 +224,7 @@ if dots:
     print()
     dots = False
 
+# output stuff, left and right column
 labels=[]
 values=[]
 
@@ -229,14 +264,17 @@ if not args.create:
         labels.append(plural(filesmissing, "file") + " missing")
         values.append(filesmissing)
 
+# get maximum width of items for both columns
 labelwidth = max(len(label) for label in labels)
 valuewidth = math.floor(max(0 if value==0 else math.log10(value) for value in values))+1
 # that definitely is easier to accomplish
 formatstring = """{0:"""+str(labelwidth)+"""}: {1:>"""+str(valuewidth)+"""}"""
 
+# separation line between process output and result table
 if args.quiet != 2 or notfound > 0:
     print("-" * (labelwidth + valuewidth + 2))
 
+# print results
 for label, value in zip(labels, values):
     print(formatstring.format(label, value))
 
