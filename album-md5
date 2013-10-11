@@ -118,6 +118,7 @@ def processDir(path):
         # the checksum file will be overwritten -> ask how to proceed
         if md5exists and args.create:
             if skip_all:
+                dircount += 1
                 skipped_overwrites += 1
                 return 0
             if not overwrite_all:
@@ -136,6 +137,7 @@ def processDir(path):
                     raise RecursionException("aborted")
                 elif answer == "l":
                     skip_all = True
+                    dircount += 1
                     skipped_overwrites += 1
                     return 0
                 elif answer == "s":
