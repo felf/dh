@@ -295,7 +295,7 @@ valuewidth = math.floor(max(0 if value==0 else math.log10(value) for value in va
 formatstring = """{0:"""+str(labelwidth)+"""}: {1:>"""+str(valuewidth)+"""}"""
 
 # separation line between process output and result table
-if args.quiet < 3 and (not_in_md5 or files_missing or md5_missing or files or dirs) or question_asked:
+if args.quiet < 3 and (not_in_md5 or files_missing or md5_missing or files or dircount) or question_asked:
     print("-" * (labelwidth + valuewidth + 2))
 
 # print results
