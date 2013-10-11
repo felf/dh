@@ -104,7 +104,7 @@ def processDir(path):
                 if skip_all:
                     print("Skipping", end="")
                 else:
-                    print("Processing {0:>2} files in".format(len(filelist)), end="")
+                    print("Processing {0:>2} files in ".format(len(filelist)), end="")
                 print("."+path[len(cwd):] if path.startswith(cwd) else path)
         if not md5exists and not args.create and args.quiet < 3:
             print("No checksum file in", "."+path[len(cwd):] if path.startswith(cwd) else path)
