@@ -67,6 +67,9 @@ class RecursionException(Exception):
 
 # main recursive function
 def processDir(path):
+    if not os.path.isdir(path):
+        return 0
+
     global cwd, dircount, fails, files, files_missing, limit, md5_missing, not_in_md5, passes, skip, skipped_overwrites, overwrite_all, skip_all, question_asked, dots
     hashed_bytes = 0
 
