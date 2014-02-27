@@ -1,15 +1,19 @@
 #!/usr/bin/python3
 
-import hashlib, os, argparse, sys, math
+import argparse
+import hashlib
+import math
+import os
+import sys
 
 parser = argparse.ArgumentParser(
-        description = "Recursively create and check md5 checksums of directories",
-        epilog = 'By default, only directories without any subdirectories ("leaves") will be processed. '
-                 'This can be overridden with the -f option. '
-                 'All files in a directory (except files called "Checksums.md5") will be hashed '
-                 'and either stored in the MD5 file or checked against it, depending on operation mode. '
-                 "If no operation mode is given, checking mode will be selected.",
-        prog = 'album-md5')
+    description="Recursively create and check md5 checksums of directories",
+    epilog='By default, only directories without any subdirectories ("leaves") will be processed. '
+           'This can be overridden with the -f option. '
+           'All files in a directory (except files called "Checksums.md5") will be hashed '
+           'and either stored in the MD5 file or checked against it, depending on operation mode. '
+           "If no operation mode is given, checking mode will be selected.",
+    prog='album-md5')
 group = parser.add_mutually_exclusive_group()
 group.add_argument('-c', '--create', action='store_true', help='create MD5 checksum files')
 group.add_argument('-p', '--paths', action='store_true', help='only check paths, don\'t compare checksums (faster)')
@@ -65,6 +69,7 @@ cwd = os.getcwd()
 class RecursionException(Exception):
     pass
 
+
 # main recursive function
 def processDir(path):
     if not os.path.isdir(path):
@@ -84,7 +89,7 @@ def processDir(path):
             return hashed_bytes
 
     # leaf part: process files
-    filelist = [entry for entry in content if os.path.isfile(path + "/" + entry)]
+    filelist = [entry for entry in content if os.path.isfile(path+"/"+entry)]
 
     # only process if this dir is not part of the first x to skip
     if skip > 0:
@@ -102,18 +107,20 @@ def processDir(path):
             filelist.remove("Checksums.md5")
 
         # full output mode: print number of files and name of directory
-        if args.quiet==0:
+        if args.quiet == 0:
             if md5exists or args.create:
                 if skip_all:
                     print("Skipping", end="")
                 else:
-                    print("Processing {0:>2} files in ".format(len(filelist)), end="")
+                    print("Processing {0:>2} files in ".format(
+                        len(filelist)), end="")
                 print("."+path[len(cwd):] if path.startswith(cwd) else path)
         if not md5exists and not args.create and args.quiet < 3:
-            print("No checksum file in", "."+path[len(cwd):] if path.startswith(cwd) else path)
+            print("No checksum file in", "."+path[len(cwd):]
+                  if path.startswith(cwd) else path)
 
         # reduced output: only print a dot for each directory
-        elif args.quiet==1:
+        elif args.quiet == 1:
             print(".", end="")
             sys.stdout.flush()
             dots = True
@@ -160,12 +167,13 @@ def processDir(path):
                         if dots:
                             print()
                             dots = False
-                        print(">>> '{0}' from MD5 file does not exist." \
-                                .format(file if args.quiet == 0 else path + "/" + file), file=sys.stderr)
+                        print(">>> '{0}' from MD5 file does not exist.".format(
+                            file if args.quiet == 0 else path + "/" + file),
+                            file=sys.stderr)
                         files_missing += 1
             elif filelist:
                 md5_missing += 1
-        
+
         # only process files if needed (i.e. being hashed or checked against existing MD5)
         if args.create or md5exists:
             for f in filelist:
@@ -177,8 +185,9 @@ def processDir(path):
                     if dots:
                         print()
                         dots = False
-                    print(">>> '{0}' not in existing MD5 file." \
-                            .format(f if args.quiet == 0 else path + "/" + f), file=sys.stderr)
+                    print(">>> '{0}' not in existing MD5 file.".format(
+                        f if args.quiet == 0 else path + "/" + f),
+                        file=sys.stderr)
                     not_in_md5 += 1
                     # that file doesn't count as it doesn't have to be processed
                     files -= 1
@@ -201,7 +210,8 @@ def processDir(path):
             if filelist:
                 with open(checksums_path, "wt") as md5_file:
                     for f in filelist:
-                        print("{0} *{1}".format(checksums[f], f), file = md5_file)
+                        print("{0} *{1}".format(checksums[f], f),
+                              file=md5_file)
 
         # decrease counter for fixed number of dirs to process
         if limit > -1:
@@ -212,9 +222,10 @@ def processDir(path):
         dircount += 1
     return hashed_bytes
 
+
 # print plural forms of words depending on assiociated number
-def plural(number, singular, plural = ""):
-    if singular[-1]=="y" and not plural:
+def plural(number, singular, plural=""):
+    if singular[-1] == "y" and not plural:
         plural = singular[0:-1]+"ies"
 
     if number == 1:
@@ -295,7 +306,8 @@ if not args.create:
 
 # get maximum width of items for both columns
 labelwidth = max(len(label) for label in labels)
-valuewidth = math.floor(max(0 if value==0 else math.log10(value) for value in values))+1
+valuewidth = math.floor(max(
+    0 if value == 0 else math.log10(value) for value in values))+1
 # that definitely is easier to accomplish
 formatstring = """{0:"""+str(labelwidth)+"""}: {1:>"""+str(valuewidth)+"""}"""
 
