@@ -110,7 +110,7 @@ def processDir(path):
         if args.quiet == 0:
             if md5exists or args.create:
                 if skip_all:
-                    print("Skipping", end="")
+                    print("Skipping ", end="")
                 else:
                     print("Processing {0:>2} files in ".format(
                         len(filelist)), end="")
