@@ -5,6 +5,7 @@ import hashlib
 import math
 import os
 import sys
+import time
 
 parser = argparse.ArgumentParser(
     description="Recursively create and check md5 checksums of directories",
@@ -243,9 +244,12 @@ hashed_bytes = 0
 
 # recurse every passed directory
 try:
+    starttime = time.time()
     for dir in args.locations:
         dir = os.path.abspath(dir)
         hashed_bytes += processDir(dir)
+    endtime = time.time()
+    duration = endtime - starttime
 except KeyboardInterrupt:
     if dots:
         print()
@@ -295,6 +299,11 @@ if not args.paths:
     labels.append("  hashed bytes")
     values.append(hashed_bytes)
 
+    # --paths is fast, we don’t need time stats (also, hashed_bytes == 0)
+    labels.append("time elapsed")
+    values.append("{0:3.1f} seconds ({1:0.1f} MiB/second)".format(
+        duration, hashed_bytes/1048576/duration if duration != 0 else 0))
+
 if not args.create:
     if not_in_md5 > 0:
         labels.append(plural(not_in_md5, "file") + " not listen in checksum file")
@@ -307,7 +316,8 @@ if not args.create:
 # get maximum width of items for both columns
 labelwidth = max(len(label) for label in labels)
 valuewidth = math.floor(max(
-    0 if value == 0 else math.log10(value) for value in values))+1
+    0 if value == 0 or isinstance(value, str) else
+    math.log10(value) for value in values))+1
 # that definitely is easier to accomplish
 formatstring = """{0:"""+str(labelwidth)+"""}: {1:>"""+str(valuewidth)+"""}"""
 
