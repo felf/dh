@@ -11,20 +11,27 @@ parser = argparse.ArgumentParser(
     description="Recursively create and check md5 checksums of directories",
     epilog='By default, only directories without any subdirectories ("leaves") will be processed. '
            'This can be overridden with the -f option. '
-           'All files in a directory (except files called "Checksums.md5") will be hashed '
+           'All files in a directory (except the checksum filename) will be hashed '
            'and either stored in the MD5 file or checked against it, depending on operation mode. '
            "If no operation mode is given, checking mode will be selected.",
     prog='album-md5')
 group = parser.add_mutually_exclusive_group()
-group.add_argument('-c', '--create', action='store_true', help='create MD5 checksum files')
+group.add_argument('-c', '--create', action='store_true', help='create checksums and write them to files')
+group.add_argument('-F', '--filename', action='store', default='Checksums.md5', metavar='name', help='name of checksum files (default: Checksums.md5)')
 group.add_argument('-p', '--paths', action='store_true', help='only check paths, don\'t compare checksums (faster)')
 parser.add_argument('-s', '--skip', action='store', default=0, type=int, metavar='n', help='skip given number of dirs (to resume an aborted run)')
 parser.add_argument('-n', '--number', action='store', default=-1, type=int, metavar='n', help='only process this many dirs (after the skipped ones)')
-parser.add_argument('-q', '--quiet', action='count', default=0, help='less progress output (-q: print dots instead of paths, -qq: print no progress at all, -qqq: suppress warnings about missing MD5 files)')
+parser.add_argument('-q', '--quiet', action='count', default=0, help='less progress output (-q: print dots instead of paths, -qq: print no progress at all, -qqq: suppress warnings about missing checksum files)')
 parser.add_argument('-f', '--force', action='store_true', help='force processing of files in dirs with subdirs')
-parser.add_argument('-o', '--overwrite', action='store_true', help='don\'t ask to overwrite md5 files, just overwrite')
+parser.add_argument('-o', '--overwrite', action='store_true', help='override checksum files without asking')
 parser.add_argument('locations', metavar='dir', type=str, nargs='*', help='a list of directories to parse (default is current dir)')
 args = parser.parse_args()
+
+# clean-up of input
+args.filename = os.path.basename(args.filename)
+if args.quiet > 3:
+    args.quiet = 3
+
 
 # counting variables for the main recursion
 # -----------------------------------------
@@ -59,10 +66,6 @@ question_asked = False
 
 # whether the last thing printed was a progress dot (i.e. without line break)
 dots = False
-
-# handle exceeding number of -q parameters
-if args.quiet > 3:
-    args.quiet = 3
 
 cwd = os.getcwd()
 
@@ -102,10 +105,10 @@ def processDir(path):
 
         filelist.sort()
         # see if checksum file exists
-        md5exists = "Checksums.md5" in filelist
+        md5exists = args.filename in filelist
         if md5exists:
             # and remove it from the list of files to process
-            filelist.remove("Checksums.md5")
+            filelist.remove(args.filename)
 
         # full output mode: print number of files and name of directory
         if args.quiet == 0:
@@ -139,7 +142,7 @@ def processDir(path):
                     dots = False
                 while True:
                     question_asked = True
-                    answer = input(">>> Checksums.md5 exists: (O)verwrite, o(v)erwrite all, (s)kip, skip al(l), (a)bort? ")
+                    answer = input(">>> Checksum file exists: (O)verwrite, o(v)erwrite all, (s)kip, skip al(l), (a)bort? ")
                     if answer.lower() in "ovsla":
                         break
                 if answer == "v":
@@ -155,7 +158,7 @@ def processDir(path):
                     skipped_overwrites += 1
                     return 0
 
-        checksums_path = path + "/Checksums.md5"
+        checksums_path = path + "/" + args.filename
         checksums = {}
         oldsums = {}
         # read entries in MD5 file
