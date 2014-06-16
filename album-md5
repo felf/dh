@@ -84,16 +84,16 @@ def processDir(path):
 
     # recursive part: go through all subdirs
     content = os.listdir(path)
-    dirs = [entry for entry in content if os.path.isdir(path + "/" + entry)]
+    dirs = [entry for entry in content if os.path.isdir(path + os.path.sep + entry)]
     if dirs:
         dirs.sort()
         for d in dirs:
-            hashed_bytes += processDir(path+"/"+d)
+            hashed_bytes += processDir(path + os.path.sep + d)
         if not args.force:
             return hashed_bytes
 
     # leaf part: process files
-    filelist = [entry for entry in content if os.path.isfile(path+"/"+entry)]
+    filelist = [entry for entry in content if os.path.isfile(path + os.path.sep + entry)]
 
     # only process if this dir is not part of the first x to skip
     if skip > 0:
@@ -158,7 +158,7 @@ def processDir(path):
                     skipped_overwrites += 1
                     return 0
 
-        checksums_path = path + "/" + args.filename
+        checksums_path = path + os.path.sep + args.filename
         checksums = {}
         oldsums = {}
         # read entries in MD5 file
@@ -172,7 +172,7 @@ def processDir(path):
                             print()
                             dots = False
                         print(">>> '{0}' from MD5 file does not exist.".format(
-                            file if args.quiet == 0 else path + "/" + file),
+                            file if args.quiet == 0 else path + os.path.sep + file),
                             file=sys.stderr)
                         files_missing += 1
             elif filelist:
@@ -190,15 +190,15 @@ def processDir(path):
                         print()
                         dots = False
                     print(">>> '{0}' not in existing MD5 file.".format(
-                        f if args.quiet == 0 else path + "/" + f),
+                        f if args.quiet == 0 else path + os.path.sep + f),
                         file=sys.stderr)
                     not_in_md5 += 1
                     # that file doesn't count as it doesn't have to be processed
                     files -= 1
                 # want to create or check the md5
                 elif not args.paths:
-                    checksums[f] = hashlib.md5(open(path + "/" + f, "rb").read()).hexdigest()
-                    hashed_bytes += os.path.getsize(path + "/" + f)
+                    checksums[f] = hashlib.md5(open(path + os.path.sep + f, "rb").read()).hexdigest()
+                    hashed_bytes += os.path.getsize(path + os.path.sep + f)
                     if not args.create:
                         if oldsum != checksums[f]:
                             if dots:
