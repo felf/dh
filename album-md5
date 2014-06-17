@@ -75,7 +75,7 @@ class RecursionException(Exception):
 
 
 # main recursive function
-def processDir(path):
+def recurseDir(path):
     if not os.path.isdir(path):
         return 0
 
@@ -88,7 +88,7 @@ def processDir(path):
     if dirs:
         dirs.sort()
         for d in dirs:
-            hashed_bytes += processDir(path + os.path.sep + d)
+            hashed_bytes += recurseDir(path + os.path.sep + d)
         if not args.force:
             return hashed_bytes
 
@@ -250,7 +250,7 @@ try:
     starttime = time.time()
     for dir in args.locations:
         dir = os.path.abspath(dir)
-        hashed_bytes += processDir(dir)
+        hashed_bytes += recurseDir(dir)
     endtime = time.time()
     duration = endtime - starttime
 except KeyboardInterrupt:
