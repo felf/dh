@@ -24,6 +24,7 @@ parser.add_argument('-n', '--number', action='store', default=-1, type=int, meta
 parser.add_argument('-q', '--quiet', action='count', default=0, help='less progress output (-q: print dots instead of paths, -qq: print no progress at all, -qqq: suppress warnings about missing checksum files)')
 parser.add_argument('-f', '--force', action='store_true', help='force processing of files in dirs with subdirs')
 parser.add_argument('-o', '--overwrite', action='store_true', help='override checksum files without asking')
+parser.add_argument('--no-missing-checksums', action='store_true', help='Don\'t warn on directories without checksum files')
 parser.add_argument('locations', metavar='dir', type=str, nargs='*', help='a list of directories to parse (default is current dir)')
 args = parser.parse_args()
 
@@ -131,8 +132,12 @@ def recurseDir(path):
                         len(filelist)), end="")
                 print("."+path[len(cwd):] if path.startswith(cwd) else path)
         if not md5exists and not args.create and args.quiet < 3:
-            print("No checksum file in", "."+path[len(cwd):]
-                  if path.startswith(cwd) else path)
+            if dots:
+                print()
+                dots = False
+            if not args.no_missing_checksums:
+                print("No checksum file in .{0}".format(
+                    path[len(cwd):] if path.startswith(cwd) else path))
 
         # reduced output: only print a dot for each directory
         elif args.quiet == 1:
