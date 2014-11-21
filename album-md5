@@ -17,8 +17,8 @@ parser = argparse.ArgumentParser(
     prog='album-md5')
 group = parser.add_mutually_exclusive_group()
 group.add_argument('-c', '--create', action='store_true', help='create checksums and write them to files')
-group.add_argument('-F', '--filename', action='store', default='Checksums.md5', metavar='name', help='name of checksum files (default: Checksums.md5)')
 group.add_argument('-p', '--paths', action='store_true', help='only check paths, don\'t compare checksums (faster)')
+parser.add_argument('-F', '--filename', action='store', default='Checksums.md5', metavar='name', help='name of checksum files (default: Checksums.md5, use \'all\' to use any *.md5 file in checking mode)')
 parser.add_argument('-s', '--skip', action='store', default=0, type=int, metavar='n', help='skip given number of dirs (to resume an aborted run)')
 parser.add_argument('-n', '--number', action='store', default=-1, type=int, metavar='n', help='only process this many dirs (after the skipped ones)')
 parser.add_argument('-q', '--quiet', action='count', default=0, help='less progress output (-q: print dots instead of paths, -qq: print no progress at all, -qqq: suppress warnings about missing checksum files)')
@@ -28,9 +28,14 @@ parser.add_argument('locations', metavar='dir', type=str, nargs='*', help='a lis
 args = parser.parse_args()
 
 # clean-up of input
-args.filename = os.path.basename(args.filename)
 if args.quiet > 3:
     args.quiet = 3
+if args.filename == "all":
+    if args.create:
+        print("Error: cannot combine '-F all' with '-c'.", file=sys.stderr)
+        exit(1)
+else:
+    args.filename = os.path.basename(args.filename)
 
 
 # counting variables for the main recursion
@@ -104,11 +109,17 @@ def recurseDir(path):
             return 0
 
         filelist.sort()
-        # see if checksum file exists
-        md5exists = args.filename in filelist
-        if md5exists:
-            # and remove it from the list of files to process
-            filelist.remove(args.filename)
+        # look for requested (or existing) checksum files
+        if args.filename == "all":
+            md5files = [f for f in filelist if f.lower().endswith(".md5")]
+            md5exists = len(md5files) > 0
+        else:
+            md5files = [args.filename]
+            md5exists = args.filename in filelist
+        # and remove them from the files to be checked
+        for f in md5files:
+            if f in filelist:
+                filelist.remove(f)
 
         # full output mode: print number of files and name of directory
         if args.quiet == 0:
@@ -158,23 +169,26 @@ def recurseDir(path):
                     skipped_overwrites += 1
                     return 0
 
-        checksums_path = path + os.path.sep + args.filename
+        checksums_paths = [path + os.path.sep + f for f in md5files]
         checksums = {}
+
         oldsums = {}
         # read entries in MD5 file
         if not args.create:
             if md5exists:
-                for line in open(checksums_path):
-                    file, md5 = line[34:-1], line[:32]
-                    oldsums[file] = md5
-                    if not file in filelist:
-                        if dots:
-                            print()
-                            dots = False
-                        print(">>> '{0}' from MD5 file does not exist.".format(
-                            file if args.quiet == 0 else path + os.path.sep + file),
-                            file=sys.stderr)
-                        files_missing += 1
+                for checksums_path in checksums_paths:
+                    for line in open(checksums_path):
+                        file, md5 = line[34:-1], line[:32]
+                        oldsums[file] = md5
+                        if file not in filelist:
+                            if dots:
+                                print()
+                                dots = False
+                            print(">>> '{0}': '{1}' does not exist.".format(
+                                checksums_path,
+                                file if args.quiet == 0 else path + os.path.sep + file),
+                                file=sys.stderr)
+                            files_missing += 1
             elif filelist:
                 md5_missing += 1
 
@@ -204,7 +218,9 @@ def recurseDir(path):
                             if dots:
                                 print()
                                 dots = False
-                            print(">>> '{0}': checksum error.".format(f), file=sys.stderr)
+                            print(">>> '{0}': checksum error for '{1}'".format(
+                                checksums_path, f),
+                                file=sys.stderr)
                             fails += 1
                         else:
                             passes += 1
@@ -212,7 +228,7 @@ def recurseDir(path):
         # write ne checksum file
         if args.create:
             if filelist:
-                with open(checksums_path, "wt") as md5_file:
+                with open(checksums_paths[0], "wt") as md5_file:
                     for f in filelist:
                         print("{0} *{1}".format(checksums[f], f),
                               file=md5_file)
