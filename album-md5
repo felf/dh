@@ -9,25 +9,52 @@ import time
 
 parser = argparse.ArgumentParser(
     description="Recursively create and verify md5 checksums in directories",
-    epilog='By default, only directories without any subdirectories ("leaves") will be processed. '
-           'This can be overridden with the -f option. '
-           'All files in a directory (except the checksum filename) will be hashed '
-           'and either stored in the MD5 file or checked against it, depending on operation mode. '
-           "If no operation mode is given, checking mode will be selected.",
+    epilog='By default, only directories without any subdirectories ("leaves")'
+           'will be processed. This can be overridden with the -f option. '
+           'All files in a directory (except the checksum filename) will be '
+           'hashed and either stored in the MD5 file or checked against it, '
+           'depending on operation mode. If no operation mode is given, '
+           'checking mode will be selected.',
     prog='album-md5')
 group = parser.add_mutually_exclusive_group()
-group.add_argument('-c', '--create', action='store_true', help='create checksums and write them to files')
-group.add_argument('-p', '--paths', action='store_true', help='only check paths, don\'t compare checksums (faster)')
-parser.add_argument('-F', '--filename', action='store', default='Checksums.md5', metavar='name', help='name of checksum files (default: Checksums.md5, use \'all\' to use any *.md5 file in checking mode)')
-parser.add_argument('-s', '--skip', action='store', default=0, type=int, metavar='n', help='skip given number of dirs (to resume an aborted run)')
-parser.add_argument('-n', '--number', action='store', default=-1, type=int, metavar='n', help='only process this many dirs (after the skipped ones)')
-parser.add_argument('-f', '--force', action='store_true', help='force processing of files in dirs with subdirs')
-parser.add_argument('-o', '--overwrite', action='store_true', help='override checksum files without asking')
-parser.add_argument('--no-missing-checksums', action='store_true', help='Don\'t warn on directories without checksum files')
-parser.add_argument('locations', metavar='dir', type=str, nargs='*', help='a list of directories to parse (default is current dir)')
+group.add_argument(
+    '-c', '--create', action='store_true',
+    help='create checksums and write them to files')
+group.add_argument(
+    '-p', '--paths', action='store_true',
+    help='only check paths, don\'t compare checksums (faster)')
+parser.add_argument(
+    '-F', '--filename', action='store', default='Checksums.md5',
+    metavar='name',
+    help='name of checksum files (default: Checksums.md5, use \'all\' to use '
+         'any *.md5 file in checking mode)')
+parser.add_argument(
+    '-s', '--skip', action='store', default=0, type=int, metavar='n',
+    help='skip given number of dirs (to resume an aborted run)')
+parser.add_argument(
+    '-n', '--number', action='store', default=-1, type=int, metavar='n',
+    help='only process this many dirs (after the skipped ones)')
+parser.add_argument(
+    '-f', '--force', action='store_true',
+    help='force processing of files in dirs with subdirs')
+parser.add_argument(
+    '-o', '--overwrite', action='store_true',
+    help='override checksum files without asking')
+parser.add_argument(
+    '--no-missing-checksums', action='store_true',
+    help='Don\'t warn on directories without checksum files')
+parser.add_argument(
+    'locations', metavar='dir', type=str, nargs='*',
+    help='a list of directories to parse (default is current dir)')
 group = parser.add_mutually_exclusive_group()
-group.add_argument('-q', '--quiet', action='count', default=0, help='less progress output (-q: print dots instead of paths, -qq: print no progress at all, -qqq: suppress warnings about missing checksum files)')
-group.add_argument('-v', '--verbose', action='store_true', help='print the file that is being checked')
+group.add_argument(
+    '-q', '--quiet', action='count', default=0,
+    help='less progress output (-q: print dots instead of paths, -qq: '
+         'print no progress at all, -qqq: suppress warnings about missing '
+         'checksum files)')
+group.add_argument(
+    '-v', '--verbose', action='store_true',
+    help='print the file that is being checked')
 args = parser.parse_args()
 
 # clean-up of input
@@ -87,12 +114,16 @@ def recurseDir(path):
     if not os.path.isdir(path):
         return 0
 
-    global cwd, dircount, fails, files, files_missing, limit, md5_missing, not_in_md5, passes, skip, skipped_overwrites, overwrite_all, skip_all, question_asked, dots
+    global cwd, dircount, fails, files, files_missing, limit, md5_missing
+    global not_in_md5, passes, skip, skipped_overwrites, overwrite_all
+    global skip_all, question_asked, dots
     hashed_bytes = 0
 
     # recursive part: go through all subdirs
     content = os.listdir(path)
-    dirs = [entry for entry in content if os.path.isdir(path + os.path.sep + entry)]
+    dirs = [
+        entry for entry in content
+        if os.path.isdir(path + os.path.sep + entry)]
     if dirs:
         dirs.sort()
         for d in dirs:
@@ -101,7 +132,9 @@ def recurseDir(path):
             return hashed_bytes
 
     # leaf part: process files
-    filelist = [entry for entry in content if os.path.isfile(path + os.path.sep + entry)]
+    filelist = [
+        entry for entry in content
+        if os.path.isfile(path + os.path.sep + entry)]
 
     # only process if this dir is not part of the first x to skip
     if skip > 0:
@@ -160,7 +193,9 @@ def recurseDir(path):
                     dots = False
                 while True:
                     question_asked = True
-                    answer = input(">>> Checksum file exists: (O)verwrite, o(v)erwrite all, (s)kip, skip al(l), (a)bort? ")
+                    answer = input(
+                        ">>> Checksum file exists: (O)verwrite, "
+                        "o(v)erwrite all, (s)kip, skip al(l), (a)bort? ")
                     if answer.lower() in "ovsla":
                         break
                 if answer == "v":
@@ -193,13 +228,14 @@ def recurseDir(path):
                                 dots = False
                             print(">>> '{0}': '{1}' does not exist.".format(
                                 checksums_path,
-                                file if args.quiet == 0 else path + os.path.sep + file),
+                                file if args.quiet == 0
+                                else path + os.path.sep + file),
                                 file=sys.stderr)
                             files_missing += 1
             elif filelist:
                 md5_missing += 1
 
-        # only process files if needed (i.e. being hashed or checked against existing MD5)
+        # only process files if needed (i.e. being hashed or checked)
         if args.create or md5exists:
             for f in filelist:
                 files += 1
@@ -214,13 +250,13 @@ def recurseDir(path):
                         f if args.quiet == 0 else path + os.path.sep + f),
                         file=sys.stderr)
                     not_in_md5 += 1
-                    # that file doesn't count as it doesn't have to be processed
                     files -= 1
                 # want to create or check the md5
                 elif not args.paths:
                     if args.verbose:
                         print("Hashing '{0}'".format(path + os.path.sep + f))
-                    checksums[f] = hashlib.md5(open(path + os.path.sep + f, "rb").read()).hexdigest()
+                    checksums[f] = hashlib.md5(
+                        open(path + os.path.sep + f, "rb").read()).hexdigest()
                     hashed_bytes += os.path.getsize(path + os.path.sep + f)
                     if not args.create:
                         if oldsum != checksums[f]:
@@ -309,7 +345,8 @@ if skipped_overwrites > 0:
     values.append(skipped_overwrites)
 
 if md5_missing > 0:
-    labels.append(plural(md5_missing, "  directory") + " without checksum file")
+    labels.append(
+        plural(md5_missing, "  directory") + " without checksum file")
     values.append(md5_missing)
 
 labels.append(plural(files, "file") + " processed")
@@ -317,7 +354,8 @@ values.append(files)
 
 if not args.create:
     if not args.paths:
-        labels.append(plural(passes, "  check passed", "  checks passed"))
+        labels.append(
+            plural(passes, "  check passed", "  checks passed"))
         values.append(passes)
 
         if fails > 0:
@@ -335,7 +373,8 @@ if not args.paths:
 
 if not args.create:
     if not_in_md5 > 0:
-        labels.append(plural(not_in_md5, "file") + " not listen in checksum file")
+        labels.append(
+            plural(not_in_md5, "file") + " not listen in checksum file")
         values.append(not_in_md5)
 
     if files_missing > 0:
@@ -351,7 +390,9 @@ valuewidth = math.floor(max(
 formatstring = """{0:"""+str(labelwidth)+"""}: {1:>"""+str(valuewidth)+"""}"""
 
 # separation line between process output and result table
-if args.quiet < 3 and (not_in_md5 or files_missing or md5_missing or files or dircount) or question_asked:
+if args.quiet < 3 and (
+    not_in_md5 or files_missing or md5_missing or files or dircount
+) or question_asked:
     print("-" * (labelwidth + valuewidth + 2))
 
 # print results
