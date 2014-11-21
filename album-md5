@@ -251,8 +251,6 @@ try:
     for dir in args.locations:
         dir = os.path.abspath(dir)
         hashed_bytes += recurseDir(dir)
-    endtime = time.time()
-    duration = endtime - starttime
 except KeyboardInterrupt:
     if dots:
         print()
@@ -263,6 +261,9 @@ except KeyboardInterrupt:
         print("\nCheck aborted.")
 except RecursionException:
     pass
+finally:
+    endtime = time.time()
+    duration = endtime - starttime
 
 if dots:
     print()
