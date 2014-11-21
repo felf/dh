@@ -21,11 +21,13 @@ group.add_argument('-p', '--paths', action='store_true', help='only check paths,
 parser.add_argument('-F', '--filename', action='store', default='Checksums.md5', metavar='name', help='name of checksum files (default: Checksums.md5, use \'all\' to use any *.md5 file in checking mode)')
 parser.add_argument('-s', '--skip', action='store', default=0, type=int, metavar='n', help='skip given number of dirs (to resume an aborted run)')
 parser.add_argument('-n', '--number', action='store', default=-1, type=int, metavar='n', help='only process this many dirs (after the skipped ones)')
-parser.add_argument('-q', '--quiet', action='count', default=0, help='less progress output (-q: print dots instead of paths, -qq: print no progress at all, -qqq: suppress warnings about missing checksum files)')
 parser.add_argument('-f', '--force', action='store_true', help='force processing of files in dirs with subdirs')
 parser.add_argument('-o', '--overwrite', action='store_true', help='override checksum files without asking')
 parser.add_argument('--no-missing-checksums', action='store_true', help='Don\'t warn on directories without checksum files')
 parser.add_argument('locations', metavar='dir', type=str, nargs='*', help='a list of directories to parse (default is current dir)')
+group = parser.add_mutually_exclusive_group()
+group.add_argument('-q', '--quiet', action='count', default=0, help='less progress output (-q: print dots instead of paths, -qq: print no progress at all, -qqq: suppress warnings about missing checksum files)')
+group.add_argument('-v', '--verbose', action='store_true', help='print the file that is being checked')
 args = parser.parse_args()
 
 # clean-up of input
@@ -216,6 +218,8 @@ def recurseDir(path):
                     files -= 1
                 # want to create or check the md5
                 elif not args.paths:
+                    if args.verbose:
+                        print("Hashing '{0}'".format(path + os.path.sep + f))
                     checksums[f] = hashlib.md5(open(path + os.path.sep + f, "rb").read()).hexdigest()
                     hashed_bytes += os.path.getsize(path + os.path.sep + f)
                     if not args.create:
