@@ -226,11 +226,8 @@ def recurseDir(path):
                             if dots:
                                 print()
                                 dots = False
-                            print(">>> '{0}': '{1}' does not exist.".format(
-                                checksums_path,
-                                file if args.quiet == 0
-                                else path + os.path.sep + file),
-                                file=sys.stderr)
+                            print(">>> '{0}': does not exist: '{1}'".format(
+                                checksums_path, file), file=sys.stderr)
                             files_missing += 1
             elif filelist:
                 md5_missing += 1
@@ -246,7 +243,7 @@ def recurseDir(path):
                     if dots:
                         print()
                         dots = False
-                    print(">>> '{0}' not in existing MD5 file.".format(
+                    print(">>> '{0}' not in any MD5 file.".format(
                         f if args.quiet == 0 else path + os.path.sep + f),
                         file=sys.stderr)
                     not_in_md5 += 1
@@ -263,7 +260,7 @@ def recurseDir(path):
                             if dots:
                                 print()
                                 dots = False
-                            print(">>> '{0}': checksum error for '{1}'".format(
+                            print(">>> '{0}': checksum error: '{1}'".format(
                                 checksums_path, f),
                                 file=sys.stderr)
                             fails += 1
