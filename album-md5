@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+""" album-md5 creates and verifies checksums recursively. """
+
 import argparse
 import hashlib
 import math
@@ -90,6 +92,9 @@ files_missing = 0
 not_in_md5 = 0
 # number of matching directories without md5 file
 md5_missing = 0
+# number of bytes processed during hasing
+total_hashed_bytes = 0
+
 
 # answer flags for the question about already existing md5 files
 # overwrite all following md5 collisions
@@ -106,11 +111,14 @@ cwd = os.getcwd()
 
 
 class RecursionException(Exception):
+    """ Base class for custom exceptions. """
+
     pass
 
 
-# main recursive function
-def recurseDir(path):
+def recurse_dir(path):
+    """ The recursive function which processes a single directory. """
+
     if not os.path.isdir(path):
         return 0
 
@@ -126,8 +134,8 @@ def recurseDir(path):
         if os.path.isdir(path + os.path.sep + entry)]
     if dirs:
         dirs.sort()
-        for d in dirs:
-            hashed_bytes += recurseDir(path + os.path.sep + d)
+        for item in dirs:
+            hashed_bytes += recurse_dir(path + os.path.sep + item)
         if not args.force:
             return hashed_bytes
 
@@ -147,15 +155,15 @@ def recurseDir(path):
         filelist.sort()
         # look for requested (or existing) checksum files
         if args.filename == "all":
-            md5files = [f for f in filelist if f.lower().endswith(".md5")]
+            md5files = [fl for fl in filelist if fl.lower().endswith(".md5")]
             md5exists = len(md5files) > 0
         else:
             md5files = [args.filename]
             md5exists = args.filename in filelist
         # and remove them from the files to be checked
-        for f in md5files:
-            if f in filelist:
-                filelist.remove(f)
+        for md5file in md5files:
+            if md5file in filelist:
+                filelist.remove(md5file)
 
         # full output mode: print number of files and name of directory
         if args.quiet == 0:
@@ -252,6 +260,9 @@ def recurseDir(path):
                 elif not args.paths:
                     if args.verbose:
                         print("Hashing '{0}'".format(path + os.path.sep + f))
+                    # TODO: selbst einlesen und dann hashen
+                    # http://stackoverflow.com/questions/1131220/get-md5-hash-
+                    # of-big-files-in-python
                     checksums[f] = hashlib.md5(
                         open(path + os.path.sep + f, "rb").read()).hexdigest()
                     hashed_bytes += os.path.getsize(path + os.path.sep + f)
@@ -260,8 +271,7 @@ def recurseDir(path):
                             if dots:
                                 print()
                                 dots = False
-                            print(">>> '{0}': checksum error: '{1}'".format(
-                                checksums_path, f),
+                            print(">>> 'checksum error: '{0}'".format(f),
                                 file=sys.stderr)
                             fails += 1
                         else:
@@ -270,9 +280,9 @@ def recurseDir(path):
         # write ne checksum file
         if args.create:
             if filelist:
-                with open(checksums_paths[0], "wt") as md5_file:
-                    for f in filelist:
-                        print("{0} *{1}".format(checksums[f], f),
+                with open(checksums_paths[0], "w") as md5_file:
+                    for item in filelist:
+                        print("{0} *{1}".format(checksums[item], item),
                               file=md5_file)
 
         # decrease counter for fixed number of dirs to process
@@ -286,29 +296,29 @@ def recurseDir(path):
 
 
 # print plural forms of words depending on assiociated number
-def plural(number, singular, plural=""):
-    if singular[-1] == "y" and not plural:
-        plural = singular[0:-1]+"ies"
+def plural(number, singular_form, plural_form=""):
+    """ Return the singular or plural form of a string depending on number. """
+
+    if singular_form[-1] == "y" and not plural_form:
+        plural_form = singular_form[0:-1]+"ies"
 
     if number == 1:
-        return singular
-    elif plural:
-        return plural
+        return singular_form
+    elif plural_form:
+        return plural_form
     else:
-        return singular+"s"
+        return singular_form+"s"
 
 # use current dir if no dir to process was given
 if not args.locations:
     args.locations.append(os.getcwd())
 
-hashed_bytes = 0
-
 # recurse every passed directory
 try:
     starttime = time.time()
-    for dir in args.locations:
-        dir = os.path.abspath(dir)
-        hashed_bytes += recurseDir(dir)
+    for location in args.locations:
+        location = os.path.abspath(location)
+        total_hashed_bytes += recurse_dir(location)
 except KeyboardInterrupt:
     if dots:
         print()
@@ -361,12 +371,12 @@ if not args.create:
 
 if not args.paths:
     labels.append("  hashed bytes")
-    values.append(hashed_bytes)
+    values.append(total_hashed_bytes)
 
-    # --paths is fast, we don’t need time stats (also, hashed_bytes == 0)
+    # --paths is fast, we don’t need time stats (also, total_hashed_bytes == 0)
     labels.append("time elapsed")
     values.append("{0:3.1f} seconds ({1:0.1f} MiB/second)".format(
-        duration, hashed_bytes/1048576/duration if duration != 0 else 0))
+        duration, total_hashed_bytes/1048576/duration if duration != 0 else 0))
 
 if not args.create:
     if not_in_md5 > 0:
