@@ -12,7 +12,7 @@ import time
 parser = argparse.ArgumentParser(
     description="Recursively create and verify md5 checksums in directories",
     epilog='By default, only directories without any subdirectories ("leaves")'
-           'will be processed. This can be overridden with the -f option. '
+           ' will be processed. This can be overridden with the -f option. '
            'All files in a directory (except the checksum filename) will be '
            'hashed and either stored in the MD5 file or checked against it, '
            'depending on operation mode. If no operation mode is given, '
