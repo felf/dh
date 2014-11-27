@@ -157,147 +157,151 @@ def recurse_dir(path):
     # only process if this dir is not part of the first x to skip
     if skip > 0:
         skip -= 1
+        # count directory as processed if it contains processed files
+        if filelist:
+            dircount += 1
+        return hashed_bytes
+
+    # abort processing here if given dir limit is reached
+    if limit == 0:
+        return 0
+
+    filelist.sort()
+    # look for requested (or existing) checksum files
+    if args.filename == "all":
+        md5files = [fl for fl in filelist if fl.lower().endswith(".md5")]
+        md5exists = len(md5files) > 0
     else:
-        # abort processing here if given dir limit is reached
-        if limit == 0:
+        md5files = [args.filename]
+        md5exists = args.filename in filelist
+    # and remove them from the files to be checked
+    for md5file in md5files:
+        if md5file in filelist:
+            filelist.remove(md5file)
+
+    # full output mode: print number of files and name of directory
+    if args.quiet == 0:
+        if md5exists or args.create:
+            if skip_all:
+                print("Skipping ", end="")
+            else:
+                print("Processing {0:>2} files in ".format(
+                    len(filelist)), end="")
+            print("." + path[len(cwd):] if path.startswith(cwd) else path)
+    if not md5exists and not args.create and args.quiet < 3:
+        if dots:
+            print()
+            dots = False
+        if not args.no_missing_checksums:
+            print("No checksum file in .{0}".format(
+                path[len(cwd):] if path.startswith(cwd) else path))
+
+    # reduced output: only print a dot for each directory
+    elif args.quiet == 1:
+        print(".", end="")
+        sys.stdout.flush()
+        dots = True
+
+    # the checksum file will be overwritten -> ask how to proceed
+    if md5exists and args.create:
+        if skip_all:
+            dircount += 1
+            skipped_overwrites += 1
             return 0
-
-        filelist.sort()
-        # look for requested (or existing) checksum files
-        if args.filename == "all":
-            md5files = [fl for fl in filelist if fl.lower().endswith(".md5")]
-            md5exists = len(md5files) > 0
-        else:
-            md5files = [args.filename]
-            md5exists = args.filename in filelist
-        # and remove them from the files to be checked
-        for md5file in md5files:
-            if md5file in filelist:
-                filelist.remove(md5file)
-
-        # full output mode: print number of files and name of directory
-        if args.quiet == 0:
-            if md5exists or args.create:
-                if skip_all:
-                    print("Skipping ", end="")
-                else:
-                    print("Processing {0:>2} files in ".format(
-                        len(filelist)), end="")
-                print("." + path[len(cwd):] if path.startswith(cwd) else path)
-        if not md5exists and not args.create and args.quiet < 3:
+        if not overwrite_all:
+            # put a newline behind the dots
             if dots:
                 print()
                 dots = False
-            if not args.no_missing_checksums:
-                print("No checksum file in .{0}".format(
-                    path[len(cwd):] if path.startswith(cwd) else path))
-
-        # reduced output: only print a dot for each directory
-        elif args.quiet == 1:
-            print(".", end="")
-            sys.stdout.flush()
-            dots = True
-
-        # the checksum file will be overwritten -> ask how to proceed
-        if md5exists and args.create:
-            if skip_all:
+            while True:
+                question_asked = True
+                answer = input(
+                    ">>> Checksum file exists: (O)verwrite, "
+                    "o(v)erwrite all, (s)kip, skip al(l), (a)bort? ")
+                if answer.lower() in "ovsla":
+                    break
+            if answer == "v":
+                overwrite_all = True
+            elif answer == "a":
+                raise RecursionException("aborted")
+            elif answer == "l":
+                skip_all = True
                 dircount += 1
                 skipped_overwrites += 1
                 return 0
-            if not overwrite_all:
-                # put a newline behind the dots
+            elif answer == "s":
+                skipped_overwrites += 1
+                return 0
+
+    checksums_paths = [path + os.path.sep + f for f in md5files]
+    checksums = {}
+
+    oldsums = {}
+    # read entries in MD5 file
+    if not args.create:
+        if md5exists:
+            for checksums_path in checksums_paths:
+                for line in open(checksums_path):
+                    file, md5 = line[34:-1], line[:32]
+                    oldsums[file] = md5
+                    if file not in filelist:
+                        if dots:
+                            print()
+                            dots = False
+                        print(">>> '{0}': does not exist: '{1}'".format(
+                            checksums_path, file), file=sys.stderr)
+                        files_missing += 1
+        elif filelist:
+            md5_missing += 1
+
+    # only process files if needed (i.e. being hashed or checked)
+    if args.create or md5exists:
+        for f in filelist:
+            files += 1
+
+            oldsum = oldsums.get(f)
+            # want to check, but file does not exist in MD5
+            if not args.create and not oldsum:
                 if dots:
                     print()
                     dots = False
-                while True:
-                    question_asked = True
-                    answer = input(
-                        ">>> Checksum file exists: (O)verwrite, "
-                        "o(v)erwrite all, (s)kip, skip al(l), (a)bort? ")
-                    if answer.lower() in "ovsla":
-                        break
-                if answer == "v":
-                    overwrite_all = True
-                elif answer == "a":
-                    raise RecursionException("aborted")
-                elif answer == "l":
-                    skip_all = True
-                    dircount += 1
-                    skipped_overwrites += 1
-                    return 0
-                elif answer == "s":
-                    skipped_overwrites += 1
-                    return 0
+                print(">>> '{0}' not in any MD5 file.".format(
+                    f if args.quiet == 0 else path + os.path.sep + f),
+                      file=sys.stderr)
+                not_in_md5 += 1
+                files -= 1
+            # want to create or check the md5
+            elif not args.paths:
+                if args.verbose:
+                    print("Hashing '{0}'".format(path + os.path.sep + f))
+                # TODO: selbst einlesen und dann hashen
+                # http://stackoverflow.com/questions/1131220/get-md5-hash-
+                # of-big-files-in-python
+                checksums[f] = hashlib.md5(
+                    open(path + os.path.sep + f, "rb").read()).hexdigest()
+                hashed_bytes += os.path.getsize(path + os.path.sep + f)
+                if not args.create:
+                    if oldsum != checksums[f]:
+                        if dots:
+                            print()
+                            dots = False
+                        print(">>> 'checksum error: '{0}'".format(f),
+                              file=sys.stderr)
+                        fails += 1
+                    else:
+                        passes += 1
 
-        checksums_paths = [path + os.path.sep + f for f in md5files]
-        checksums = {}
+    # write ne checksum file
+    if args.create:
+        if filelist:
+            with open(checksums_paths[0], "w") as md5_file:
+                for item in filelist:
+                    print("{0} *{1}".format(checksums[item], item),
+                          file=md5_file)
 
-        oldsums = {}
-        # read entries in MD5 file
-        if not args.create:
-            if md5exists:
-                for checksums_path in checksums_paths:
-                    for line in open(checksums_path):
-                        file, md5 = line[34:-1], line[:32]
-                        oldsums[file] = md5
-                        if file not in filelist:
-                            if dots:
-                                print()
-                                dots = False
-                            print(">>> '{0}': does not exist: '{1}'".format(
-                                checksums_path, file), file=sys.stderr)
-                            files_missing += 1
-            elif filelist:
-                md5_missing += 1
-
-        # only process files if needed (i.e. being hashed or checked)
-        if args.create or md5exists:
-            for f in filelist:
-                files += 1
-
-                oldsum = oldsums.get(f)
-                # want to check, but file does not exist in MD5
-                if not args.create and not oldsum:
-                    if dots:
-                        print()
-                        dots = False
-                    print(">>> '{0}' not in any MD5 file.".format(
-                        f if args.quiet == 0 else path + os.path.sep + f),
-                          file=sys.stderr)
-                    not_in_md5 += 1
-                    files -= 1
-                # want to create or check the md5
-                elif not args.paths:
-                    if args.verbose:
-                        print("Hashing '{0}'".format(path + os.path.sep + f))
-                    # TODO: selbst einlesen und dann hashen
-                    # http://stackoverflow.com/questions/1131220/get-md5-hash-
-                    # of-big-files-in-python
-                    checksums[f] = hashlib.md5(
-                        open(path + os.path.sep + f, "rb").read()).hexdigest()
-                    hashed_bytes += os.path.getsize(path + os.path.sep + f)
-                    if not args.create:
-                        if oldsum != checksums[f]:
-                            if dots:
-                                print()
-                                dots = False
-                            print(">>> 'checksum error: '{0}'".format(f),
-                                  file=sys.stderr)
-                            fails += 1
-                        else:
-                            passes += 1
-
-        # write ne checksum file
-        if args.create:
-            if filelist:
-                with open(checksums_paths[0], "w") as md5_file:
-                    for item in filelist:
-                        print("{0} *{1}".format(checksums[item], item),
-                              file=md5_file)
-
-        # decrease counter for fixed number of dirs to process
-        if limit > -1:
-            limit -= 1
+    # decrease counter for fixed number of dirs to process
+    if limit > -1:
+        limit -= 1
 
     # count directory as processed if it contains processed files
     if filelist:
