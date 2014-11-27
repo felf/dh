@@ -405,7 +405,7 @@ valuewidth = math.floor(max(
     0 if value == 0 or isinstance(value, str) else
     math.log10(value) for value in values)) + 1
 # that definitely is easier to accomplish
-formatstring = "{0:" + str(labelwidth)+"}: {1:>" + str(valuewidth) + "}"
+formatstring = "{0:" + str(labelwidth) + "}: {1:>" + str(valuewidth) + "}"
 
 # separation line between process output and result table
 if args.quiet < 3 and (
