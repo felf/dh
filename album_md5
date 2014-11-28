@@ -242,14 +242,14 @@ def recurse_dir(path):
         if md5exists:
             for checksums_path in checksums_paths:
                 for line in open(checksums_path):
-                    file, md5 = line[34:-1], line[:32]
-                    oldsums[file] = md5
-                    if file not in filelist:
+                    filename, md5 = line[34:-1], line[:32]
+                    oldsums[filename] = md5
+                    if filename not in filelist:
                         if dots:
                             print()
                             dots = False
                         print(">>> '{0}': does not exist: '{1}'".format(
-                            checksums_path, file), file=sys.stderr)
+                            checksums_path, filename), file=sys.stderr)
                         files_missing += 1
         elif filelist:
             md5_missing += 1
@@ -291,7 +291,7 @@ def recurse_dir(path):
                     else:
                         passes += 1
 
-    # write ne checksum file
+    # write new checksum file
     if args.create:
         if filelist:
             with open(checksums_paths[0], "w") as md5_file:
