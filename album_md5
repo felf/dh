@@ -9,7 +9,7 @@ import os
 import sys
 import time
 
-def parse_arguments():
+def parse_arguments(): # {{{1
     """ Parse commandline arguments and return the argparse object. """
 
     parser = argparse.ArgumentParser(
@@ -79,7 +79,7 @@ def parse_arguments():
 args = parse_arguments()
 
 
-# counting variables for the main recursion
+# counting variables for the main recursion # {{{1
 # -----------------------------------------
 # number of matching directories (i.e. those that contain files to process)
 dircount = 0
@@ -104,7 +104,6 @@ md5_missing = 0
 # number of bytes processed during hasing
 total_hashed_bytes = 0
 
-
 # answer flags for the question about already existing md5 files
 # overwrite all following md5 collisions
 overwrite_all = args.overwrite
@@ -119,16 +118,17 @@ dots = False
 cwd = os.getcwd()
 
 
-class RecursionException(Exception):
+class RecursionException(Exception): # {{{1
 
     """ Base class for custom exceptions. """
 
     pass
 
 
-def recurse_dir(path):
+def recurse_dir(path): # {{{1
     """ The recursive function which processes a single directory. """
 
+    # variables {{{2
     if not os.path.isdir(path):
         return 0
 
@@ -137,7 +137,7 @@ def recurse_dir(path):
     global skip_all, question_asked, dots
     hashed_bytes = 0
 
-    # recursive part: go through all subdirs
+    # recursive part: go through all subdirs {{{2
     content = os.listdir(path)
     dirs = [
         entry for entry in content
@@ -149,12 +149,12 @@ def recurse_dir(path):
         if not args.force:
             return hashed_bytes
 
-    # leaf part: process files
+    # leaf part: process files {{{2
     filelist = [
         entry for entry in content
         if os.path.isfile(path + os.path.sep + entry)]
 
-    # only process if this dir is not part of the first x to skip
+    # only process if this dir is not part of the first x to skip {{{3
     if skip > 0:
         skip -= 1
         # count directory as processed if it contains processed files
@@ -167,7 +167,7 @@ def recurse_dir(path):
         return 0
 
     filelist.sort()
-    # look for requested (or existing) checksum files
+    # look for requested (or existing) checksum files {{{3
     if args.filename == "all":
         md5files = [fl for fl in filelist if fl.lower().endswith(".md5")]
         md5exists = len(md5files) > 0
@@ -179,6 +179,7 @@ def recurse_dir(path):
         if md5file in filelist:
             filelist.remove(md5file)
 
+    # progress output {{{3
     # full output mode: print number of files and name of directory
     if args.quiet == 0:
         if md5exists or args.create:
@@ -202,7 +203,7 @@ def recurse_dir(path):
         sys.stdout.flush()
         dots = True
 
-    # the checksum file will be overwritten -> ask how to proceed
+    # the checksum file will be overwritten -> ask how to proceed {{{3
     if md5exists and args.create:
         if skip_all:
             dircount += 1
@@ -236,8 +237,8 @@ def recurse_dir(path):
     checksums_paths = [path + os.path.sep + f for f in md5files]
     checksums = {}
 
+    # read entries in MD5 file {{{3
     oldsums = {}
-    # read entries in MD5 file
     if not args.create:
         if md5exists:
             for checksums_path in checksums_paths:
@@ -254,7 +255,7 @@ def recurse_dir(path):
         elif filelist:
             md5_missing += 1
 
-    # only process files if needed (i.e. being hashed or checked)
+    # process hasing results (compare with or write to files) {{{3
     if args.create or md5exists:
         for f in filelist:
             files += 1
@@ -291,7 +292,7 @@ def recurse_dir(path):
                     else:
                         passes += 1
 
-    # write new checksum file
+    # write new checksum file {{{3
     if args.create:
         if filelist:
             with open(checksums_paths[0], "w") as md5_file:
@@ -299,6 +300,7 @@ def recurse_dir(path):
                     print("{0} *{1}".format(checksums[item], item),
                           file=md5_file)
 
+    # update counters {{{2
     # decrease counter for fixed number of dirs to process
     if limit > -1:
         limit -= 1
@@ -306,11 +308,12 @@ def recurse_dir(path):
     # count directory as processed if it contains processed files
     if filelist:
         dircount += 1
+
+    # that's it }}}2
     return hashed_bytes
 
 
-# print plural forms of words depending on assiociated number
-def plural(number, singular_form, plural_form=""):
+def plural(number, singular_form, plural_form=""): # {{{1
     """ Return the singular or plural form of a string depending on number. """
 
     if singular_form[-1] == "y" and not plural_form:
@@ -327,7 +330,7 @@ def plural(number, singular_form, plural_form=""):
 if not args.locations:
     args.locations.append(os.getcwd())
 
-# recurse every passed directory
+# recurse every given directory {{{1
 try:
     starttime = time.time()
     for location in args.locations:
@@ -351,6 +354,7 @@ if dots:
     print()
     dots = False
 
+# output result {{{1
 # output stuff, left and right column
 labels, values = [], []
 
@@ -408,7 +412,6 @@ labelwidth = max(len(label) for label in labels)
 valuewidth = math.floor(max(
     0 if value == 0 or isinstance(value, str) else
     math.log10(value) for value in values)) + 1
-# that definitely is easier to accomplish
 formatstring = "{0:" + str(labelwidth) + "}: {1:>" + str(valuewidth) + "}"
 
 # separation line between process output and result table
