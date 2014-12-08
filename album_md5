@@ -285,7 +285,7 @@ def recurse_dir(path):
                         if dots:
                             print()
                             dots = False
-                        print(">>> 'checksum error: '{0}'".format(f),
+                        print(">>> checksum error: '{0}'".format(f),
                               file=sys.stderr)
                         fails += 1
                     else:
