@@ -388,8 +388,14 @@ if not args.create:
             values.append(fails)
 
 if not args.paths:
+    value = total_hashed_bytes
+    power = 0
+    while value >= 1024:
+        value = value / 1024
+        power = power + 1
+    unit = ["B", "kiB", "MiB", "GiB", "TiB"][power]
     labels.append("  hashed bytes")
-    values.append(total_hashed_bytes)
+    values.append("{0} ({1:0.1f} {2})".format(total_hashed_bytes, value, unit))
 
     # --paths is fast, we don’t need time stats (also, total_hashed_bytes == 0)
     labels.append("time elapsed")
