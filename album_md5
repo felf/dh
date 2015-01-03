@@ -383,101 +383,117 @@ def plural(number, singular_form, plural_form=""): # {{{1
     else:
         return singular_form + "s"
 
-# recurse every given directory {{{1
-try:
-    starttime = time.time()
-    for location in args.locations:
-        location = os.path.abspath(location)
-        State.total_hashed_bytes += recurse_dir(location)
-except KeyboardInterrupt:
-    if args.create:
-        OUT("\nHashing aborted.")
-    else:
-        OUT("\nCheck aborted.")
-except RecursionException:
-    pass
-finally:
-    endtime = time.time()
-    duration = endtime - starttime
 
-Output.clear_dot()
+def print_results(duration): # {{{1
+    """ Put all the statistics into a nice tabular format to read. """
 
-# output result {{{1
-# output stuff, left and right column
-labels, values = [], []
+    # output stuff, left and right column
+    labels, values = [], []
 
-labels.append(plural(State.dircount, "directory") + " processed")
-values.append(State.dircount)
+    labels.append(plural(State.dircount, "directory") + " processed")
+    values.append(State.dircount)
 
-if args.skip > 0:
-    labels.append("  of which skipped at the beginning")
-    values.append(args.skip)
+    if args.skip > 0:
+        labels.append("  of which skipped at the beginning")
+        values.append(args.skip)
 
-if State.skipped_overwrites > 0:
-    labels.append("  of which skipped due to overwriting")
-    values.append(State.skipped_overwrites)
+    if State.skipped_overwrites > 0:
+        labels.append("  of which skipped due to overwriting")
+        values.append(State.skipped_overwrites)
 
-if State.md5_missing > 0:
-    labels.append(
-        plural(State.md5_missing, "  directory") + " without checksum file")
-    values.append(State.md5_missing)
+    if State.md5_missing > 0:
+        labels.append(
+            plural(State.md5_missing, "  directory") + " without checksum file")
+        values.append(State.md5_missing)
 
-labels.append(plural(State.files, "file") + " processed")
-values.append(State.files)
+    labels.append(plural(State.files, "file") + " processed")
+    values.append(State.files)
 
-if not args.create:
+    if not args.create:
+        if not args.paths:
+            labels.append(
+                plural(State.passes, "  check passed", "  checks passed"))
+            values.append(State.passes)
+
+            labels.append(plural(
+                State.passes, "  check failed", "  checks failed"))
+            values.append(State.fails)
+
     if not args.paths:
-        labels.append(
-            plural(State.passes, "  check passed", "  checks passed"))
-        values.append(State.passes)
+        value = State.total_hashed_bytes
+        power = 0
+        while value >= 1024:
+            value = value / 1024
+            power = power + 1
+        unit = ["B", "kiB", "MiB", "GiB", "TiB"][power]
+        labels.append("  hashed bytes")
+        values.append("{0} ({1:0.1f} {2})".format(
+            State.total_hashed_bytes, value, unit))
 
-        labels.append(plural(State.passes, "  check failed", "  checks failed"))
-        values.append(State.fails)
+        # --paths is fast, we don’t need time stats and total_hashed_bytes == 0
+        labels.append("time elapsed")
+        values.append("{0:3.1f} seconds ({1:0.1f} MiB/second)".format(
+            duration,
+            State.total_hashed_bytes / 1048576 / duration if duration != 0
+            else 0))
 
-if not args.paths:
-    value = State.total_hashed_bytes
-    power = 0
-    while value >= 1024:
-        value = value / 1024
-        power = power + 1
-    unit = ["B", "kiB", "MiB", "GiB", "TiB"][power]
-    labels.append("  hashed bytes")
-    values.append("{0} ({1:0.1f} {2})".format(
-        State.total_hashed_bytes, value, unit))
+    if not args.create:
+        if State.not_in_md5 > 0:
+            labels.append(plural(
+                State.not_in_md5, "file") + " not listen in checksum file")
+            values.append(State.not_in_md5)
 
-    # --paths is fast, we don’t need time stats (also, total_hashed_bytes == 0)
-    labels.append("time elapsed")
-    values.append("{0:3.1f} seconds ({1:0.1f} MiB/second)".format(
-        duration,
-        State.total_hashed_bytes / 1048576 / duration if duration != 0 else 0))
+        if State.files_missing > 0:
+            labels.append(plural(State.files_missing, "file") + " missing")
+            values.append(State.files_missing)
 
-if not args.create:
-    if State.not_in_md5 > 0:
-        labels.append(
-            plural(State.not_in_md5, "file") + " not listen in checksum file")
-        values.append(State.not_in_md5)
+    # get maximum width of items for both columns
+    labelwidth = max(len(label) for label in labels)
+    valuewidth = math.floor(max(
+        0 if value == 0 or isinstance(value, str) else
+        math.log10(value) for value in values)) + 1
+    formatstring = "{0:" + str(labelwidth) + "}: {1:>" + str(valuewidth) + "}"
 
-    if State.files_missing > 0:
-        labels.append(plural(State.files_missing, "file") + " missing")
-        values.append(State.files_missing)
+    # separation line between process output and result table
+    if args.quiet < 3 and any(
+            (State.not_in_md5, State.files_missing, State.md5_missing,
+             State.files, State.dircount)
+    ) or State.question_asked:
+        print("-" * (labelwidth + valuewidth + 2))
 
-# get maximum width of items for both columns
-labelwidth = max(len(label) for label in labels)
-valuewidth = math.floor(max(
-    0 if value == 0 or isinstance(value, str) else
-    math.log10(value) for value in values)) + 1
-formatstring = "{0:" + str(labelwidth) + "}: {1:>" + str(valuewidth) + "}"
+    # print results
+    for label, value in zip(labels, values):
+        print(formatstring.format(label, value))
 
-# separation line between process output and result table
-if args.quiet < 3 and any(
-        (State.not_in_md5, State.files_missing, State.md5_missing, State.files,
-         State.dircount)
-) or State.question_asked:
-    print("-" * (labelwidth + valuewidth + 2))
 
-# print results
-for label, value in zip(labels, values):
-    print(formatstring.format(label, value))
+def main(): # {{{1
+    """ This is where everything comes together. """
 
-if State.fails or State.files_missing or State.not_in_md5 or State.md5_missing:
-    exit(1)
+    # recurse every given directory
+    try:
+        starttime = time.time()
+        for location in args.locations:
+            location = os.path.abspath(location)
+            State.total_hashed_bytes += recurse_dir(location)
+    except KeyboardInterrupt:
+        if args.create:
+            OUT("\nHashing aborted.")
+        else:
+            OUT("\nCheck aborted.")
+    except RecursionException:
+        pass
+    finally:
+        endtime = time.time()
+        duration = endtime - starttime
+
+    Output.clear_dot()
+    print_results(duration)
+
+    if any(
+            State.fails, State.files_missing,
+            State.not_in_md5, State.md5_missing
+        ):
+        exit(1)
+
+if __name__ == "__main__": # {{{1
+    main()
