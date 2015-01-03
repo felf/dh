@@ -126,38 +126,48 @@ def parse_arguments(): # {{{1
 args = parse_arguments()
 
 
-# counting variables for the main recursion # {{{1
-# -----------------------------------------
-# number of matching directories (i.e. those that contain files to process)
-dircount = 0
-# number of matching directories to skip at the beginning
-skip = args.skip
-# number of matching directories after which to exit
-limit = args.number
-# number of directories skipped due to answer to overwrite question
-skipped_overwrites = 0
-# number of files processed
-files = 0
-# number of failed md5 checks
-fails = 0
-# number of passed md5 checks
-passes = 0
-# number of files listed in md5, but physically missing
-files_missing = 0
-# number of files not listed in existing md5 file
-not_in_md5 = 0
-# number of matching directories without md5 file
-md5_missing = 0
-# number of bytes processed during hasing
-total_hashed_bytes = 0
+class State(object): # {{{1
+    """ Encapsulate al necessary state variables for the recursion. """
 
-# answer flags for the question about already existing md5 files
-# overwrite all following md5 collisions
-overwrite_all = args.overwrite
-# skip all following directories with md5 collisions
-skip_all = False
-# whether a question was asked (which means there was output)
-question_asked = False
+    # number of matching directories (i.e. those that contain files to process)
+    dircount = 0
+    # number of matching directories to skip at the beginning
+    skip = 0
+    # number of matching directories after which to exit
+    limit = 0
+    # number of directories skipped due to answer to overwrite question
+    skipped_overwrites = 0
+    # number of files processed
+    files = 0
+    # number of failed md5 checks
+    fails = 0
+    # number of passed md5 checks
+    passes = 0
+    # number of files listed in md5, but physically missing
+    files_missing = 0
+    # number of files not listed in existing md5 file
+    not_in_md5 = 0
+    # number of matching directories without md5 file
+    md5_missing = 0
+    # number of bytes processed during hasing
+    total_hashed_bytes = 0
+
+    # answer flags for the question about already existing md5 files
+    # overwrite all following md5 collisions
+    overwrite_all = args.overwrite
+    # skip all following directories with md5 collisions
+    skip_all = False
+    # whether a question was asked (which means there was output)
+    question_asked = False
+
+    @staticmethod
+    def set_from_arguments(arguments):
+        """ Set relevant statistics according to main arguments. """
+
+        State.skip = arguments.skip
+        State.limit = arguments.number
+
+State.set_from_arguments(args)
 
 class RecursionException(Exception): # {{{1
 
@@ -190,9 +200,6 @@ def recurse_dir(path): # {{{1
     if not os.path.isdir(path):
         return 0
 
-    global dircount, fails, files, files_missing, limit, md5_missing
-    global not_in_md5, passes, skip, skipped_overwrites, overwrite_all
-    global skip_all, question_asked
     hashed_bytes = 0
 
     # recursive part: go through all subdirs {{{2
@@ -213,15 +220,15 @@ def recurse_dir(path): # {{{1
         if os.path.isfile(path + os.path.sep + entry)]
 
     # only process if this dir is not part of the first x to skip {{{3
-    if skip > 0:
-        skip -= 1
+    if State.skip > 0:
+        State.skip -= 1
         # count directory as processed if it contains processed files
         if filelist:
-            dircount += 1
+            State.dircount += 1
         return hashed_bytes
 
     # abort processing here if given dir limit is reached
-    if limit == 0:
+    if State.limit == 0:
         return 0
 
     filelist.sort()
@@ -242,7 +249,7 @@ def recurse_dir(path): # {{{1
     if args.quiet == 0:
         if md5exists or args.create:
             OUT(
-                "Skipping " if skip_all else
+                "Skipping " if State.skip_all else
                 "Processing {0:>2} files in ".format(len(filelist)) +
                 "." + path[len(cwd):] if path.startswith(cwd) else path
             )
@@ -258,31 +265,31 @@ def recurse_dir(path): # {{{1
 
     # the checksum file will be overwritten -> ask how to proceed {{{3
     if md5exists and args.create:
-        if skip_all:
-            dircount += 1
-            skipped_overwrites += 1
+        if State.skip_all:
+            State.dircount += 1
+            State.skipped_overwrites += 1
             return 0
-        if not overwrite_all:
+        if not State.overwrite_all:
             # put a newline behind the dots
             Output.clear_dot()
             while True:
-                question_asked = True
+                State.question_asked = True
                 answer = input(
                     ">>> Checksum file exists: (O)verwrite, "
                     "o(v)erwrite all, (s)kip, skip al(l), (a)bort? ")
                 if answer.lower() in "ovsla":
                     break
             if answer == "v":
-                overwrite_all = True
+                State.overwrite_all = True
             elif answer == "a":
                 raise RecursionException("aborted")
             elif answer == "l":
-                skip_all = True
-                dircount += 1
-                skipped_overwrites += 1
+                State.skip_all = True
+                State.dircount += 1
+                State.skipped_overwrites += 1
                 return 0
             elif answer == "s":
-                skipped_overwrites += 1
+                State.skipped_overwrites += 1
                 return 0
 
     checksums_paths = [path + os.path.sep + f for f in md5files]
@@ -300,28 +307,28 @@ def recurse_dir(path): # {{{1
                         if filename not in filelist:
                             ERR(">>> '{0}': does not exist: '{1}'".format(
                                 checksums_path, filename))
-                            files_missing += 1
+                            State.files_missing += 1
                 except OSError as error:
                     ERR(">>> '{0}' while reading checksum file '{1}'".format(
                         error.args[1], checksums_path))
             if len(oldsums) == 0:
                 return 0
         elif filelist:
-            md5_missing += 1
+            State.md5_missing += 1
 
     # process hasing results (compare with or write to files) {{{3
     if args.create or md5exists:
         for filename in filelist:
             fullpath = path + os.path.sep + filename
-            files += 1
+            State.files += 1
 
             oldsum = oldsums.get(filename)
             # want to check, but file does not exist in MD5
             if not args.create and not oldsum:
                 ERR(">>> '{0}' not in any MD5 file.".format(
                     filename if args.quiet == 0 else fullpath))
-                not_in_md5 += 1
-                files -= 1
+                State.not_in_md5 += 1
+                State.files -= 1
             # want to create or check the md5
             elif not args.paths:
                 if args.verbose:
@@ -334,9 +341,9 @@ def recurse_dir(path): # {{{1
                             raise Exception(0, 'checksum error')
                 except Exception as exception:
                     ERR(">>> {0}: '{1}'".format(exception.args[1], filename))
-                    fails += 1
+                    State.fails += 1
                 else:
-                    passes += 1
+                    State.passes += 1
 
     # write new checksum file {{{3
     if args.create:
@@ -352,12 +359,12 @@ def recurse_dir(path): # {{{1
 
     # update counters {{{2
     # decrease counter for fixed number of dirs to process
-    if limit > -1:
-        limit -= 1
+    if State.limit > -1:
+        State.limit -= 1
 
     # count directory as processed if it contains processed files
     if filelist:
-        dircount += 1
+        State.dircount += 1
 
     # that's it }}}2
     return hashed_bytes
@@ -381,7 +388,7 @@ try:
     starttime = time.time()
     for location in args.locations:
         location = os.path.abspath(location)
-        total_hashed_bytes += recurse_dir(location)
+        State.total_hashed_bytes += recurse_dir(location)
 except KeyboardInterrupt:
     if args.create:
         OUT("\nHashing aborted.")
@@ -399,59 +406,60 @@ Output.clear_dot()
 # output stuff, left and right column
 labels, values = [], []
 
-labels.append(plural(dircount, "directory") + " processed")
-values.append(dircount)
+labels.append(plural(State.dircount, "directory") + " processed")
+values.append(State.dircount)
 
 if args.skip > 0:
     labels.append("  of which skipped at the beginning")
     values.append(args.skip)
 
-if skipped_overwrites > 0:
+if State.skipped_overwrites > 0:
     labels.append("  of which skipped due to overwriting")
-    values.append(skipped_overwrites)
+    values.append(State.skipped_overwrites)
 
-if md5_missing > 0:
+if State.md5_missing > 0:
     labels.append(
-        plural(md5_missing, "  directory") + " without checksum file")
-    values.append(md5_missing)
+        plural(State.md5_missing, "  directory") + " without checksum file")
+    values.append(State.md5_missing)
 
-labels.append(plural(files, "file") + " processed")
-values.append(files)
+labels.append(plural(State.files, "file") + " processed")
+values.append(State.files)
 
 if not args.create:
     if not args.paths:
         labels.append(
-            plural(passes, "  check passed", "  checks passed"))
-        values.append(passes)
+            plural(State.passes, "  check passed", "  checks passed"))
+        values.append(State.passes)
 
-        labels.append(plural(passes, "  check failed", "  checks failed"))
-        values.append(fails)
+        labels.append(plural(State.passes, "  check failed", "  checks failed"))
+        values.append(State.fails)
 
 if not args.paths:
-    value = total_hashed_bytes
+    value = State.total_hashed_bytes
     power = 0
     while value >= 1024:
         value = value / 1024
         power = power + 1
     unit = ["B", "kiB", "MiB", "GiB", "TiB"][power]
     labels.append("  hashed bytes")
-    values.append("{0} ({1:0.1f} {2})".format(total_hashed_bytes, value, unit))
+    values.append("{0} ({1:0.1f} {2})".format(
+        State.total_hashed_bytes, value, unit))
 
     # --paths is fast, we don’t need time stats (also, total_hashed_bytes == 0)
     labels.append("time elapsed")
     values.append("{0:3.1f} seconds ({1:0.1f} MiB/second)".format(
         duration,
-        total_hashed_bytes / 1048576 / duration if duration != 0 else 0))
+        State.total_hashed_bytes / 1048576 / duration if duration != 0 else 0))
 
 if not args.create:
-    if not_in_md5 > 0:
+    if State.not_in_md5 > 0:
         labels.append(
-            plural(not_in_md5, "file") + " not listen in checksum file")
-        values.append(not_in_md5)
+            plural(State.not_in_md5, "file") + " not listen in checksum file")
+        values.append(State.not_in_md5)
 
-    if files_missing > 0:
-        labels.append(plural(files_missing, "file") + " missing")
-        values.append(files_missing)
+    if State.files_missing > 0:
+        labels.append(plural(State.files_missing, "file") + " missing")
+        values.append(State.files_missing)
 
 # get maximum width of items for both columns
 labelwidth = max(len(label) for label in labels)
@@ -461,14 +469,15 @@ valuewidth = math.floor(max(
 formatstring = "{0:" + str(labelwidth) + "}: {1:>" + str(valuewidth) + "}"
 
 # separation line between process output and result table
-if args.quiet < 3 and (
-    not_in_md5 or files_missing or md5_missing or files or dircount
-) or question_asked:
+if args.quiet < 3 and any(
+        (State.not_in_md5, State.files_missing, State.md5_missing, State.files,
+         State.dircount)
+) or State.question_asked:
     print("-" * (labelwidth + valuewidth + 2))
 
 # print results
 for label, value in zip(labels, values):
     print(formatstring.format(label, value))
 
-if fails or files_missing or not_in_md5 or md5_missing:
+if State.fails or State.files_missing or State.not_in_md5 or State.md5_missing:
     exit(1)
