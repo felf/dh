@@ -384,9 +384,8 @@ if not args.create:
             plural(passes, "  check passed", "  checks passed"))
         values.append(passes)
 
-        if fails > 0:
-            labels.append(plural(passes, "  check failed", "  checks failed"))
-            values.append(fails)
+        labels.append(plural(passes, "  check failed", "  checks failed"))
+        values.append(fails)
 
 if not args.paths:
     value = total_hashed_bytes
