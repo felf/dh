@@ -9,8 +9,12 @@ import os
 import sys
 import time
 
+cwd = os.getcwd()
+
 def parse_arguments(): # {{{1
     """ Parse commandline arguments and return the argparse object. """
+
+    global cwd
 
     parser = argparse.ArgumentParser(
         description='Recursively create and verify md5 checksums in '
@@ -74,6 +78,10 @@ def parse_arguments(): # {{{1
     else:
         parsed_args.filename = os.path.basename(parsed_args.filename)
 
+    # use current dir if no dir to process was given
+    if not parsed_args.locations:
+        parsed_args.locations.append(cwd)
+
     return parsed_args
 
 args = parse_arguments()
@@ -114,9 +122,6 @@ question_asked = False
 
 # whether the last thing printed was a progress dot (i.e. without line break)
 dots = False
-
-cwd = os.getcwd()
-
 
 class RecursionException(Exception): # {{{1
 
@@ -325,10 +330,6 @@ def plural(number, singular_form, plural_form=""): # {{{1
         return plural_form
     else:
         return singular_form + "s"
-
-# use current dir if no dir to process was given
-if not args.locations:
-    args.locations.append(os.getcwd())
 
 # recurse every given directory {{{1
 try:
