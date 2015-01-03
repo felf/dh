@@ -146,7 +146,9 @@ def do_hash(path): # {{{1
 
 
 def recurse_dir(path): # {{{1
-    """ The recursive function which processes a single directory. """
+    """ The recursive function which processes a single directory.
+
+    return value: the number of bytes hashed in this directory. """
 
     # variables {{{2
     if not os.path.isdir(path):
