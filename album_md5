@@ -277,7 +277,7 @@ def recurse_dir(path): # {{{1
                     if dots:
                         print()
                         dots = False
-                    print(">>> '{0}': checksum file '{1}'".format(
+                    print(">>> '{0}' while reading checksum file '{1}'".format(
                         error.args[1], checksums_path), file=sys.stderr)
             if len(oldsums) == 0:
                 return 0
@@ -324,10 +324,17 @@ def recurse_dir(path): # {{{1
     # write new checksum file {{{3
     if args.create:
         if filelist:
-            with open(checksums_paths[0], "w") as md5_file:
-                for item in filelist:
-                    print("{0} *{1}".format(checksums[item], item),
-                          file=md5_file)
+            try:
+                with open(checksums_paths[0], "w") as md5_file:
+                    for item in filelist:
+                        print("{0} *{1}".format(checksums[item], item),
+                              file=md5_file)
+            except OSError as error:
+                if dots:
+                    print()
+                    dots = False
+                print(">>> '{0}' while writing checksum file '{1}'".format(
+                    error.args[1], checksums_paths[0]), file=sys.stderr)
 
     # update counters {{{2
     # decrease counter for fixed number of dirs to process
