@@ -11,6 +11,47 @@ import time
 
 cwd = os.getcwd()
 
+
+class Output(object): # {{{1
+    """ Handles printing to the screen and the state of the output. """
+
+    # whether the last thing printed was a progress dot
+    dot_last = False
+
+    @staticmethod
+    def clear_dot(): # {{{2
+        """ Print a newline if the last thing printed was a progress dot. """
+
+        if Output.dot_last:
+            print("")
+            Output.dot_last = False
+
+    @staticmethod
+    def dot(): # {{{2
+        """ Output a progress dot. """
+
+        print(".", end="")
+        sys.stdout.flush()
+        Output.dot_last = True
+
+    @staticmethod
+    def print(*arguments): # {{{2
+        """ Output the given message. """
+
+        Output.clear_dot()
+        print(*arguments)
+
+    @staticmethod
+    def error(*arguments): # {{{2
+        """ Output a given message as error message. """
+
+        Output.clear_dot()
+        print(*arguments, file=sys.stderr)
+
+OUT = Output.print
+ERR = Output.error
+
+
 def parse_arguments(): # {{{1
     """ Parse commandline arguments and return the argparse object. """
 
@@ -118,9 +159,6 @@ skip_all = False
 # whether a question was asked (which means there was output)
 question_asked = False
 
-# whether the last thing printed was a progress dot (i.e. without line break)
-dots = False
-
 class RecursionException(Exception): # {{{1
 
     """ Base class for custom exceptions. """
@@ -154,7 +192,7 @@ def recurse_dir(path): # {{{1
 
     global dircount, fails, files, files_missing, limit, md5_missing
     global not_in_md5, passes, skip, skipped_overwrites, overwrite_all
-    global skip_all, question_asked, dots
+    global skip_all, question_asked
     hashed_bytes = 0
 
     # recursive part: go through all subdirs {{{2
@@ -203,25 +241,20 @@ def recurse_dir(path): # {{{1
     # full output mode: print number of files and name of directory
     if args.quiet == 0:
         if md5exists or args.create:
-            if skip_all:
-                print("Skipping ", end="")
-            else:
-                print("Processing {0:>2} files in ".format(
-                    len(filelist)), end="")
-            print("." + path[len(cwd):] if path.startswith(cwd) else path)
+            OUT(
+                "Skipping " if skip_all else
+                "Processing {0:>2} files in ".format(len(filelist)) +
+                "." + path[len(cwd):] if path.startswith(cwd) else path
+            )
+
     if not md5exists and not args.create and args.quiet < 3:
-        if dots:
-            print()
-            dots = False
         if not args.no_missing_checksums:
-            print("No checksum file in .{0}".format(
+            OUT("No checksum file in .{0}".format(
                 path[len(cwd):] if path.startswith(cwd) else path))
 
     # reduced output: only print a dot for each directory
     elif args.quiet == 1:
-        print(".", end="")
-        sys.stdout.flush()
-        dots = True
+        Output.dot()
 
     # the checksum file will be overwritten -> ask how to proceed {{{3
     if md5exists and args.create:
@@ -231,9 +264,7 @@ def recurse_dir(path): # {{{1
             return 0
         if not overwrite_all:
             # put a newline behind the dots
-            if dots:
-                print()
-                dots = False
+            Output.clear_dot()
             while True:
                 question_asked = True
                 answer = input(
@@ -267,18 +298,12 @@ def recurse_dir(path): # {{{1
                         filename, md5 = line[34:-1], line[:32]
                         oldsums[filename] = md5
                         if filename not in filelist:
-                            if dots:
-                                print()
-                                dots = False
-                            print(">>> '{0}': does not exist: '{1}'".format(
-                                checksums_path, filename), file=sys.stderr)
+                            ERR(">>> '{0}': does not exist: '{1}'".format(
+                                checksums_path, filename))
                             files_missing += 1
                 except OSError as error:
-                    if dots:
-                        print()
-                        dots = False
-                    print(">>> '{0}' while reading checksum file '{1}'".format(
-                        error.args[1], checksums_path), file=sys.stderr)
+                    ERR(">>> '{0}' while reading checksum file '{1}'".format(
+                        error.args[1], checksums_path))
             if len(oldsums) == 0:
                 return 0
         elif filelist:
@@ -293,18 +318,14 @@ def recurse_dir(path): # {{{1
             oldsum = oldsums.get(filename)
             # want to check, but file does not exist in MD5
             if not args.create and not oldsum:
-                if dots:
-                    print()
-                    dots = False
-                print(">>> '{0}' not in any MD5 file.".format(
-                    filename if args.quiet == 0 else fullpath),
-                      file=sys.stderr)
+                ERR(">>> '{0}' not in any MD5 file.".format(
+                    filename if args.quiet == 0 else fullpath))
                 not_in_md5 += 1
                 files -= 1
             # want to create or check the md5
             elif not args.paths:
                 if args.verbose:
-                    print("Hashing '{0}'".format(fullpath))
+                    OUT("Hashing '{0}'".format(fullpath))
                 try:
                     checksums[filename] = do_hash(fullpath)
                     hashed_bytes += os.path.getsize(fullpath)
@@ -312,11 +333,7 @@ def recurse_dir(path): # {{{1
                         if oldsum != checksums[filename]:
                             raise Exception(0, 'checksum error')
                 except Exception as exception:
-                    if dots:
-                        print()
-                        dots = False
-                    print(">>> {0}: '{1}'".format(exception.args[1], filename),
-                          file=sys.stderr)
+                    ERR(">>> {0}: '{1}'".format(exception.args[1], filename))
                     fails += 1
                 else:
                     passes += 1
@@ -330,11 +347,8 @@ def recurse_dir(path): # {{{1
                         print("{0} *{1}".format(checksums[item], item),
                               file=md5_file)
             except OSError as error:
-                if dots:
-                    print()
-                    dots = False
-                print(">>> '{0}' while writing checksum file '{1}'".format(
-                    error.args[1], checksums_paths[0]), file=sys.stderr)
+                ERR(">>> '{0}' while writing checksum file '{1}'".format(
+                    error.args[1], checksums_paths[0]))
 
     # update counters {{{2
     # decrease counter for fixed number of dirs to process
@@ -369,22 +383,17 @@ try:
         location = os.path.abspath(location)
         total_hashed_bytes += recurse_dir(location)
 except KeyboardInterrupt:
-    if dots:
-        print()
-        dots = False
     if args.create:
-        print("\nHashing aborted.")
+        OUT("\nHashing aborted.")
     else:
-        print("\nCheck aborted.")
+        OUT("\nCheck aborted.")
 except RecursionException:
     pass
 finally:
     endtime = time.time()
     duration = endtime - starttime
 
-if dots:
-    print()
-    dots = False
+Output.clear_dot()
 
 # output result {{{1
 # output stuff, left and right column
