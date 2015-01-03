@@ -295,18 +295,21 @@ def recurse_dir(path): # {{{1
             elif not args.paths:
                 if args.verbose:
                     print("Hashing '{0}'".format(path + os.path.sep + f))
-                checksums[f] = do_hash(path + os.path.sep + f)
-                hashed_bytes += os.path.getsize(path + os.path.sep + f)
-                if not args.create:
-                    if oldsum != checksums[f]:
-                        if dots:
-                            print()
-                            dots = False
-                        print(">>> checksum error: '{0}'".format(f),
-                              file=sys.stderr)
-                        fails += 1
-                    else:
-                        passes += 1
+                try:
+                    checksums[f] = do_hash(path + os.path.sep + f)
+                    hashed_bytes += os.path.getsize(path + os.path.sep + f)
+                    if not args.create:
+                        if oldsum != checksums[f]:
+                            raise Exception(0, 'checksum error')
+                except Exception as exception:
+                    if dots:
+                        print()
+                        dots = False
+                    print(">>> {0}: '{1}'".format(exception.args[1], f),
+                          file=sys.stderr)
+                    fails += 1
+                else:
+                    passes += 1
 
     # write new checksum file {{{3
     if args.create:
