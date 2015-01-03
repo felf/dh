@@ -14,8 +14,6 @@ cwd = os.getcwd()
 def parse_arguments(): # {{{1
     """ Parse commandline arguments and return the argparse object. """
 
-    global cwd
-
     parser = argparse.ArgumentParser(
         description='Recursively create and verify md5 checksums in '
                     'directories',
@@ -154,7 +152,7 @@ def recurse_dir(path): # {{{1
     if not os.path.isdir(path):
         return 0
 
-    global cwd, dircount, fails, files, files_missing, limit, md5_missing
+    global dircount, fails, files, files_missing, limit, md5_missing
     global not_in_md5, passes, skip, skipped_overwrites, overwrite_all
     global skip_all, question_asked, dots
     hashed_bytes = 0
