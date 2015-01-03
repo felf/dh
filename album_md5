@@ -130,6 +130,21 @@ class RecursionException(Exception): # {{{1
     pass
 
 
+def do_hash(path): # {{{1
+    """ Read the given file chunk by chunk and fead that to the digest. """
+
+    # thanks:
+#http://stackoverflow.com/questions/1131220/get-md5-hash-of-big-files-in-python
+    md5 = hashlib.md5()
+    with open(path, "rb") as infile:
+        while True:
+            data = infile.read(1048576) # 1 MiB at a time
+            if not data:
+                break
+            md5.update(data)
+    return md5.hexdigest()
+
+
 def recurse_dir(path): # {{{1
     """ The recursive function which processes a single directory. """
 
@@ -280,11 +295,7 @@ def recurse_dir(path): # {{{1
             elif not args.paths:
                 if args.verbose:
                     print("Hashing '{0}'".format(path + os.path.sep + f))
-                # TODO: selbst einlesen und dann hashen
-                # http://stackoverflow.com/questions/1131220/get-md5-hash-
-                # of-big-files-in-python
-                checksums[f] = hashlib.md5(
-                    open(path + os.path.sep + f, "rb").read()).hexdigest()
+                checksums[f] = do_hash(path + os.path.sep + f)
                 hashed_bytes += os.path.getsize(path + os.path.sep + f)
                 if not args.create:
                     if oldsum != checksums[f]:
