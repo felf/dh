@@ -489,10 +489,10 @@ def main(): # {{{1
     Output.clear_dot()
     print_results(duration)
 
-    if any(
+    if any([
             State.fails, State.files_missing,
             State.not_in_md5, State.md5_missing
-        ):
+        ]):
         exit(1)
 
 if __name__ == "__main__": # {{{1
