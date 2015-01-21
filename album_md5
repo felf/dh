@@ -326,7 +326,6 @@ def recurse_dir(path): # {{{1
     if args.create or md5exists:
         for filename in files:
             fullpath = path + os.path.sep + filename
-            State.files += 1
 
             oldsum = oldsums.get(filename)
             # want to check, but file does not exist in MD5
@@ -334,7 +333,6 @@ def recurse_dir(path): # {{{1
                 ERR(">>> '{0}' not in any MD5 file.".format(
                     filename if args.quiet == 0 else fullpath))
                 State.not_in_md5 += 1
-                State.files -= 1
             # want to create or check the md5
             elif not args.paths:
                 if args.verbose:
@@ -342,6 +340,7 @@ def recurse_dir(path): # {{{1
                 try:
                     checksums[filename] = do_hash(fullpath)
                     hashed_bytes += os.path.getsize(fullpath)
+                    State.files += 1
                     if not args.create:
                         if oldsum != checksums[filename]:
                             raise Exception(0, 'checksum error')
