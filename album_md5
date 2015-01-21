@@ -204,9 +204,14 @@ def recurse_dir(path): # {{{1
 
     # recursive part: go through all subdirs {{{2
     content = os.listdir(path)
-    dirs = [
-        entry for entry in content
-        if os.path.isdir(path + os.path.sep + entry)]
+    dirs = []
+    filelist = []
+    for entry in content:
+        fullpath = path + os.path.sep + entry
+        if os.path.isdir(fullpath):
+            dirs.append(entry)
+        elif os.path.isfile(fullpath):
+            filelist.append(entry)
     if dirs:
         dirs.sort()
         for item in dirs:
@@ -215,10 +220,6 @@ def recurse_dir(path): # {{{1
             return hashed_bytes
 
     # leaf part: process files {{{2
-    filelist = [
-        entry for entry in content
-        if os.path.isfile(path + os.path.sep + entry)]
-
     # only process if this dir is not part of the first x to skip {{{3
     if State.skip > 0:
         State.skip -= 1
