@@ -375,6 +375,16 @@ def recurse_dir(path): # {{{1
     return hashed_bytes
 
 
+def human_readable_size(value):
+    """ Express the given number of bytes as a binary exponential unit. """
+
+    power = 0
+    while value >= 1024 and power <= 4:
+        value = value / 1024
+        power = power + 1
+    return "{0:0.1f} {1}".format(
+        value, ["B", "kiB", "MiB", "GiB", "TiB"][power])
+
 def plural(number, singular_form, plural_form=""): # {{{1
     """ Return the singular or plural form of a string depending on number. """
 
@@ -425,15 +435,10 @@ def print_results(duration): # {{{1
             values.append(State.fails)
 
     if not args.paths:
-        value = State.total_hashed_bytes
-        power = 0
-        while value >= 1024:
-            value = value / 1024
-            power = power + 1
-        unit = ["B", "kiB", "MiB", "GiB", "TiB"][power]
         labels.append("  hashed bytes")
-        values.append("{0} ({1:0.1f} {2})".format(
-            State.total_hashed_bytes, value, unit))
+        values.append("{0} ({1})".format(
+            State.total_hashed_bytes,
+            human_readable_size(State.total_hashed_bytes)))
 
         # --paths is fast, we don’t need time stats and total_hashed_bytes == 0
         labels.append("time elapsed")
