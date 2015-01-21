@@ -411,7 +411,7 @@ def print_results(duration):  # {{{1
     values.append(State.dircount)
 
     if args.skip > 0:
-        labels.append("  of which skipped at the beginning")
+        labels.append("  after skipping")
         values.append(args.skip)
 
     if State.skipped_overwrites > 0:
@@ -423,7 +423,7 @@ def print_results(duration):  # {{{1
             plural(State.md5_missing, "  directory")))
         values.append(State.md5_missing)
 
-    labels.append(plural(State.files, "file") + " processed")
+    labels.append(plural(State.files, "file") + " hashed")
     values.append(State.files)
 
     if not args.create:
@@ -452,11 +452,12 @@ def print_results(duration):  # {{{1
     if not args.create:
         if State.not_in_md5 > 0:
             labels.append(plural(
-                State.not_in_md5, "file") + " not listen in checksum file")
+                State.not_in_md5, "file") + " not in any checksum file")
             values.append(State.not_in_md5)
 
         if State.files_missing > 0:
-            labels.append(plural(State.files_missing, "file") + " missing")
+            labels.append("listed {0} missing".format(
+                plural(State.files_missing, "file")))
             values.append(State.files_missing)
 
     # get maximum width of items for both columns
