@@ -81,6 +81,9 @@ def parse_arguments(): # {{{1
         '-s', '--skip', action='store', default=0, type=int, metavar='n',
         help='skip given number of dirs (to resume an aborted run)')
     parser.add_argument(
+        '-l', '--follow-links', action='store_true',
+        help='follow symlink instead of ignoring them')
+    parser.add_argument(
         '-n', '--number', action='store', default=-1, type=int, metavar='n',
         help='only process this many dirs (after the skipped ones)')
     parser.add_argument(
@@ -208,6 +211,8 @@ def recurse_dir(path): # {{{1
     files = []
     for entry in content:
         fullpath = path + os.path.sep + entry
+        if not args.follow_links and os.path.islink(fullpath):
+            continue
         if os.path.isdir(fullpath):
             dirs.append(entry)
         elif os.path.isfile(fullpath):
