@@ -12,14 +12,14 @@ import time
 cwd = os.getcwd()
 
 
-class Output(object): # {{{1
+class Output(object):  # {{{1
     """ Handles printing to the screen and the state of the output. """
 
     # whether the last thing printed was a progress dot
     dot_last = False
 
     @staticmethod
-    def clear_dot(): # {{{2
+    def clear_dot():  # {{{2
         """ Print a newline if the last thing printed was a progress dot. """
 
         if Output.dot_last:
@@ -27,7 +27,7 @@ class Output(object): # {{{1
             Output.dot_last = False
 
     @staticmethod
-    def dot(): # {{{2
+    def dot():  # {{{2
         """ Output a progress dot. """
 
         print(".", end="")
@@ -35,14 +35,14 @@ class Output(object): # {{{1
         Output.dot_last = True
 
     @staticmethod
-    def print(*arguments): # {{{2
+    def print(*arguments):  # {{{2
         """ Output the given message. """
 
         Output.clear_dot()
         print(*arguments)
 
     @staticmethod
-    def error(*arguments): # {{{2
+    def error(*arguments):  # {{{2
         """ Output a given message as error message. """
 
         Output.clear_dot()
@@ -52,7 +52,7 @@ OUT = Output.print
 ERR = Output.error
 
 
-def parse_arguments(): # {{{1
+def parse_arguments():  # {{{1
     """ Parse commandline arguments and return the argparse object. """
 
     parser = argparse.ArgumentParser(
@@ -129,7 +129,7 @@ def parse_arguments(): # {{{1
 args = parse_arguments()
 
 
-class State(object): # {{{1
+class State(object):  # {{{1
     """ Encapsulate al necessary state variables for the recursion. """
 
     # number of matching directories (i.e. those that contain files to process)
@@ -172,29 +172,30 @@ class State(object): # {{{1
 
 State.set_from_arguments(args)
 
-class RecursionException(Exception): # {{{1
+
+class RecursionException(Exception):  # {{{1
 
     """ Base class for custom exceptions. """
 
     pass
 
 
-def do_hash(path): # {{{1
+def do_hash(path):  # {{{1
     """ Read the given file chunk by chunk and fead that to the digest. """
 
-    # thanks:
-#http://stackoverflow.com/questions/1131220/get-md5-hash-of-big-files-in-python
+    # thanks: http://stackoverflow.com/questions/1131220/get-md5-hash-of-big-\
+    # files-in-python
     md5 = hashlib.md5()
     with open(path, "rb") as infile:
         while True:
-            data = infile.read(1048576) # 1 MiB at a time
+            data = infile.read(1048576)  # 1 MiB at a time
             if not data:
                 break
             md5.update(data)
     return md5.hexdigest()
 
 
-def recurse_dir(path): # {{{1
+def recurse_dir(path):  # {{{1
     """ The recursive function which processes a single directory.
 
     return value: the number of bytes hashed in this directory. """
@@ -385,7 +386,8 @@ def human_readable_size(value):
     return "{0:0.1f} {1}".format(
         value, ["B", "kiB", "MiB", "GiB", "TiB"][power])
 
-def plural(number, singular_form, plural_form=""): # {{{1
+
+def plural(number, singular_form, plural_form=""):  # {{{1
     """ Return the singular or plural form of a string depending on number. """
 
     if singular_form[-1] == "y" and not plural_form:
@@ -399,7 +401,7 @@ def plural(number, singular_form, plural_form=""): # {{{1
         return singular_form + "s"
 
 
-def print_results(duration): # {{{1
+def print_results(duration):  # {{{1
     """ Put all the statistics into a nice tabular format to read. """
 
     # output stuff, left and right column
@@ -417,8 +419,8 @@ def print_results(duration): # {{{1
         values.append(State.skipped_overwrites)
 
     if State.md5_missing > 0:
-        labels.append(
-            plural(State.md5_missing, "  directory") + " without checksum file")
+        labels.append("{0} without checksum file".format(
+            plural(State.md5_missing, "  directory")))
         values.append(State.md5_missing)
 
     labels.append(plural(State.files, "file") + " processed")
@@ -476,7 +478,7 @@ def print_results(duration): # {{{1
         print(formatstring.format(label, value))
 
 
-def main(): # {{{1
+def main():  # {{{1
     """ This is where everything comes together. """
 
     # recurse every given directory
@@ -505,5 +507,6 @@ def main(): # {{{1
         ]):
         exit(1)
 
-if __name__ == "__main__": # {{{1
+
+if __name__ == "__main__":  # {{{1
     main()
