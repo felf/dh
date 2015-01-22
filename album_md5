@@ -239,7 +239,7 @@ def recurse_dir(path):  # {{{1
         return 0
 
     files.sort()
-    # look for requested (or existing) checksum files {{{3
+    # look for requested (or existing) checksum files {{{2
     if args.filename == "all":
         md5files = [fl for fl in files if fl.lower().endswith(".md5")]
         md5exists = len(md5files) > 0
@@ -270,7 +270,7 @@ def recurse_dir(path):  # {{{1
     elif args.quiet == 1:
         Output.dot()
 
-    # the checksum file will be overwritten -> ask how to proceed {{{3
+    # the checksum file will be overwritten -> ask how to proceed {{{2
     if md5exists and args.create:
         if State.skip_all:
             State.dircount += 1
@@ -301,9 +301,9 @@ def recurse_dir(path):  # {{{1
 
     checksums_paths = [path + os.path.sep + f for f in md5files]
     checksums = {}
-
-    # read entries in MD5 file {{{3
     oldsums = {}
+
+    # read entries in MD5 file {{{2
     if not args.create:
         if md5exists:
             for checksums_path in checksums_paths:
@@ -323,7 +323,7 @@ def recurse_dir(path):  # {{{1
         elif files:
             State.md5_missing += 1
 
-    # process hasing results (compare with or write to files) {{{3
+    # process hashing results (compare with or write to files) {{{2
     if args.create or md5exists:
         for filename in files:
             fullpath = path + os.path.sep + filename
@@ -351,7 +351,7 @@ def recurse_dir(path):  # {{{1
                 else:
                     State.passes += 1
 
-    # write new checksum file {{{3
+    # write new checksum file {{{2
     if args.create:
         if files:
             try:
@@ -376,7 +376,7 @@ def recurse_dir(path):  # {{{1
     return hashed_bytes
 
 
-def human_readable_size(value):
+def human_readable_size(value):  # {{{1
     """ Express the given number of bytes as a binary exponential unit. """
 
     power = 0
