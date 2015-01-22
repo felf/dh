@@ -195,73 +195,94 @@ def do_hash(path):  # {{{1
     return md5.hexdigest()
 
 
-def recurse_dir(path):  # {{{1
-    """ The recursive function which processes a single directory.
+def gather_files(path, dirlist):  # {{{1
+    """ Build sorted list of directories and files to process.
 
-    return value: the number of bytes hashed in this directory. """
+    Each entry is a tuple (path, size, filelist, checksum filelist). Directory
+    paths end with a path separator. The 'size' for directories is the summed
+    size of all the files to be hashed in that dir. The size for files is the
+    actual filesize in byte. Directories that don't contain relevant files will
+    not be listed, even if any of their subdirectories actually do.
 
-    # variables {{{2
+    The resulting list looks like this:
+    [
+        ("/", 12345, ["/frotz", 12345], []),
+        ("/A/B/", 96, [("/A/B/foo", 32), ("/A/B/bar", 64)], ["Checksums.md5"])
+    ]
+        """
+
     if not os.path.isdir(path):
         return 0
+    if not path.endswith(os.path.sep):
+        path += os.path.sep
 
-    hashed_bytes = 0
+    totalsize = 0
 
-    # recursive part: go through all subdirs {{{2
+    # get and categorise directory content {{{2
     content = os.listdir(path)
     dirs = []
     files = []
-    for entry in content:
-        fullpath = path + os.path.sep + entry
-        if not args.follow_links and os.path.islink(fullpath):
+    for item in content:
+        fullpath = path + os.path.sep + item
+        if os.path.islink(fullpath) and not args.follow_links:
             continue
         if os.path.isdir(fullpath):
-            dirs.append(entry)
-        elif os.path.isfile(fullpath):
-            files.append(entry)
-    if dirs:
-        dirs.sort()
-        for item in dirs:
-            hashed_bytes += recurse_dir(path + os.path.sep + item)
-        if not args.force:
-            return hashed_bytes
+            dirs.append(item)
+        elif os.path.isfile(path + os.path.sep + item):
+            files.append(item)
 
-    # leaf part: process files {{{2
-    # only process if this dir is not part of the first x to skip {{{3
-    if State.skip > 0:
-        State.skip -= 1
-        # count directory as processed if it contains processed files
-        if files:
-            State.dircount += 1
-        return hashed_bytes
-
-    # abort processing here if given dir limit is reached
-    if State.limit == 0:
-        return 0
-
-    files.sort()
     # look for requested (or existing) checksum files {{{2
     if args.filename == "all":
-        md5files = [fl for fl in files if fl.lower().endswith(".md5")]
-        md5exists = len(md5files) > 0
+        md5files = [f for f in files if f.lower().endswith(".md5")]
+        md5files.sort()
     else:
-        md5files = [args.filename]
-        md5exists = args.filename in files
+        md5files = [args.filename] if args.filename in files else []
     # and remove them from the files to be checked
     for md5file in md5files:
         if md5file in files:
             files.remove(md5file)
 
-    # progress output {{{3
+    # gather relevant list of files in this directory {{{2
+    if files and (not dirs or args.force):
+        # only process if this dir is not excluded through constraint arguments
+        if State.skip == 0 and State.limit != 0:
+            files.sort()
+            filelist = []
+            for item in files:
+                fullpath = path + os.path.sep + item
+                size = os.path.getsize(fullpath)
+                totalsize += size
+                filelist.append(item)
+            dirlist.append((path, totalsize, filelist, md5files))
+            if State.limit != -1:
+                State.limit -= 1
+        else:
+            if State.skip > 0:
+                State.skip -= 1
+
+    # recursive part: go through all subdirs {{{2
+    if dirs:
+        dirs.sort()
+        for item in dirs:
+            if State.limit == 0:
+                return totalsize
+            totalsize += gather_files(path + item + os.path.sep, dirlist)
+    return totalsize
+
+
+def process_files(filenum_width, path, files, checksum_files):  # {{{1
+    # progress output {{{2
     # full output mode: print number of files and name of directory
     if args.quiet == 0:
-        if md5exists or args.create:
+        if checksum_files or args.create:
             OUT(
                 "Skipping " if State.skip_all else
-                "Processing {0:>2} files in ".format(len(files)) +
-                "." + path[len(cwd):] if path.startswith(cwd) else path
+                "Processing {0:>{1}} files in {2}".format(
+                    len(files), filenum_width,
+                    "." + path[len(cwd):] if path.startswith(cwd) else path)
             )
 
-    if not md5exists and not args.create and args.quiet < 3:
+    if not checksum_files and not args.create and args.quiet < 3:
         if not args.no_missing_checksums:
             OUT("No checksum file in .{0}".format(
                 path[len(cwd):] if path.startswith(cwd) else path))
@@ -271,7 +292,8 @@ def recurse_dir(path):  # {{{1
         Output.dot()
 
     # the checksum file will be overwritten -> ask how to proceed {{{2
-    if md5exists and args.create:
+    if checksum_files and args.create and os.path.isfile(
+            path + checksum_files[0]):
         if State.skip_all:
             State.dircount += 1
             State.skipped_overwrites += 1
@@ -299,13 +321,13 @@ def recurse_dir(path):  # {{{1
                 State.skipped_overwrites += 1
                 return 0
 
-    checksums_paths = [path + os.path.sep + f for f in md5files]
+    checksums_paths = [path + f for f in checksum_files]
     checksums = {}
     oldsums = {}
 
     # read entries in MD5 file {{{2
     if not args.create:
-        if md5exists:
+        if checksum_files:
             for checksums_path in checksums_paths:
                 try:
                     for line in open(checksums_path):
@@ -324,9 +346,10 @@ def recurse_dir(path):  # {{{1
             State.md5_missing += 1
 
     # process hashing results (compare with or write to files) {{{2
-    if args.create or md5exists:
+    hashed_bytes = 0
+    if args.create or checksum_files:
         for filename in files:
-            fullpath = path + os.path.sep + filename
+            fullpath = path + filename
 
             oldsum = oldsums.get(filename)
             # want to check, but file does not exist in MD5
@@ -362,17 +385,6 @@ def recurse_dir(path):  # {{{1
             except OSError as error:
                 ERR(">>> '{0}' while writing checksum file '{1}'".format(
                     error.args[1], checksums_paths[0]))
-
-    # update counters {{{2
-    # decrease counter for fixed number of dirs to process
-    if State.limit > -1:
-        State.limit -= 1
-
-    # count directory as processed if it contains processed files
-    if files:
-        State.dircount += 1
-
-    # that's it }}}2
     return hashed_bytes
 
 
@@ -485,10 +497,35 @@ def main():  # {{{1
 
     # recurse every given directory
     try:
+        dirlist = []
         starttime = time.time()
+        if not args.quiet:
+            OUT("Gathering list of files...")
         for location in args.locations:
             location = os.path.abspath(location)
-            State.total_hashed_bytes += recurse_dir(location)
+            total_size = gather_files(location, dirlist)
+
+        # find out how many characters are needed for the file count column
+        width = max([len(directory[2]) for directory in dirlist])
+        width = math.floor(math.log10(width) + 1)
+        filecount = sum([len(directory[2]) for directory in dirlist])
+
+        if not args.quiet:
+            if args.paths:
+                OUT("Checking consistency between checksum files and "
+                    "{0} {1} in {2} {3}".format(
+                        filecount, plural(filecount, "file"),
+                        len(dirlist), plural(len(dirlist), "directory")))
+            else:
+                OUT("Hashing {0} {1} in {2} {3} ({4})".format(
+                    filecount, plural(filecount, "file"),
+                    len(dirlist), plural(len(dirlist), "directory"),
+                    human_readable_size(total_size)))
+
+        for directory in dirlist:
+            State.total_hashed_bytes += process_files(
+                width, directory[0], directory[2], directory[3])
+            State.dircount += 1
     except KeyboardInterrupt:
         if args.create:
             OUT("\nHashing aborted.")
