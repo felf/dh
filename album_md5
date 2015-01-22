@@ -442,13 +442,6 @@ def print_results(duration):  # {{{1
             State.total_hashed_bytes,
             human_readable_size(State.total_hashed_bytes)))
 
-        # --paths is fast, we don’t need time stats and total_hashed_bytes == 0
-        labels.append("time elapsed")
-        values.append("{0:3.1f} seconds ({1:0.1f} MiB/second)".format(
-            duration,
-            State.total_hashed_bytes / 1048576 / duration if duration != 0
-            else 0))
-
     if not args.create:
         if State.not_in_md5 > 0:
             labels.append(plural(
@@ -459,6 +452,14 @@ def print_results(duration):  # {{{1
             labels.append("listed {0} missing".format(
                 plural(State.files_missing, "file")))
             values.append(State.files_missing)
+
+    # --paths is fast, we don’t need time stats and total_hashed_bytes == 0
+    if not args.create:
+        labels.append("time elapsed")
+        values.append("{0:3.1f} seconds ({1:0.1f} MiB/second)".format(
+            duration,
+            State.total_hashed_bytes / 1048576 / duration if duration != 0
+            else 0))
 
     # get maximum width of items for both columns
     labelwidth = max(len(label) for label in labels)
