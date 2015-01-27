@@ -262,26 +262,24 @@ def gather_files(path, dirlist):  # {{{1
                 State.skip -= 1
 
     # recursive part: go through all subdirs {{{2
-    if dirs:
-        dirs.sort()
-        for item in dirs:
-            if State.limit == 0:
-                return totalsize
-            totalsize += gather_files(path + item + os.path.sep, dirlist)
+    dirs.sort()
+    for item in dirs:
+        if State.limit == 0:
+            return totalsize
+        totalsize += gather_files(path + item + os.path.sep, dirlist)
     return totalsize
 
 
 def process_files(filenum_width, path, files, checksum_files):  # {{{1
     # progress output {{{2
     # full output mode: print number of files and name of directory
-    if args.quiet == 0:
-        if checksum_files or args.create:
-            OUT(
-                "Skipping " if State.skip_all else
-                "Processing {0:>{1}} files in {2}".format(
-                    len(files), filenum_width,
-                    "." + path[len(cwd):] if path.startswith(cwd) else path)
-            )
+    if args.quiet == 0 and (checksum_files or args.create):
+        OUT(
+            "Skipping " if State.skip_all else
+            "Processing {0:>{1}} files in {2}".format(
+                len(files), filenum_width,
+                "." + path[len(cwd):] if path.startswith(cwd) else path)
+        )
 
     if not checksum_files and not args.create and args.quiet < 3:
         if not args.no_missing_checksums:
