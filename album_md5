@@ -157,7 +157,7 @@ class State(object):  # {{{1
 
     # answer flags for the question about already existing md5 files
     # overwrite all following md5 collisions
-    overwrite_all = args.overwrite
+    overwrite_all = False
     # skip all following directories with md5 collisions
     skip_all = False
     # whether a question was asked (which means there was output)
@@ -169,6 +169,7 @@ class State(object):  # {{{1
 
         State.skip = arguments.skip
         State.limit = arguments.number
+        State.overwrite_all = args.overwrite
 
 State.set_from_arguments(args)
 
