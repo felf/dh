@@ -469,8 +469,9 @@ def print_results(duration):  # {{{1
         labels.append("  found in checksum file")
         values.append(State.found_in_md5)
 
+        # number of files that had an entry in an existing md5 file
         if State.not_in_md5 > 0:
-            labels.append("  not in any checksum file")
+            labels.append("  not in checksum file")
             values.append(State.not_in_md5)
 
         if State.files_missing > 0:
