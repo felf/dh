@@ -148,6 +148,8 @@ class State(object):  # {{{1
     passes = 0
     # number of files listed in md5, but physically missing
     files_missing = 0
+    # number of files that had an entry in an existing md5 file
+    found_in_md5 = 0
     # number of files not listed in existing md5 file
     not_in_md5 = 0
     # number of matching directories without md5 file
@@ -361,10 +363,13 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
 
             oldsum = oldsums.get(filename)
             # want to check, but file does not exist in MD5
-            if not args.create and not oldsum:
-                ERR(">>> '{0}' not in any MD5 file.".format(
-                    filename if args.quiet == 0 else fullpath))
-                State.not_in_md5 += 1
+            if not args.create:
+                if not oldsum:
+                    ERR(">>> '{0}' not in any MD5 file.".format(
+                        filename if args.quiet == 0 else fullpath))
+                    State.not_in_md5 += 1
+                else:
+                    State.found_in_md5 += 1
             # want to create or check the md5
             elif not args.paths:
                 if args.verbose:
@@ -461,6 +466,9 @@ def print_results(duration):  # {{{1
                 values.append(State.fails)
 
     if not args.create:
+        labels.append("  found in checksum file")
+        values.append(State.found_in_md5)
+
         if State.not_in_md5 > 0:
             labels.append("  not in any checksum file")
             values.append(State.not_in_md5)
