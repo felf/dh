@@ -294,7 +294,6 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
     if checksum_files and args.create and os.path.isfile(
             path + checksum_files[0]):
         if State.skip_all:
-            State.dircount += 1
             State.skipped_overwrites += 1
             return 0
         if not State.overwrite_all:
@@ -313,7 +312,6 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
                 raise RecursionException("aborted")
             elif answer == "l":
                 State.skip_all = True
-                State.dircount += 1
                 State.skipped_overwrites += 1
                 return 0
             elif answer == "s":
