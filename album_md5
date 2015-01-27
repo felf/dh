@@ -271,6 +271,8 @@ def gather_files(path, dirlist):  # {{{1
 
 
 def process_files(filenum_width, path, files, checksum_files):  # {{{1
+    """ Read checksum files and compare hashes in one directory. """
+
     # progress output {{{2
     # full output mode: print number of files and name of directory
     if args.quiet == 0 and (checksum_files or args.create):
