@@ -270,6 +270,37 @@ def gather_files(path, dirlist):  # {{{1
     return totalsize
 
 
+def ask_checksum_overwrite():
+    """ A checksum file would be overwritten. Ask how to proceed.
+
+    Return True if proceed with the current directory. """
+
+    if State.skip_all:
+        return False
+    if not State.overwrite_all:
+        # put a newline behind the dots
+        Output.clear_dot()
+        while True:
+            State.question_asked = True
+            answer = input(
+                ">>> Checksum file exists: (O)verwrite, "
+                "o(v)erwrite all, (s)kip, skip al(l), (a)bort? ")
+            if answer.lower() in "ovsla":
+                break
+        if answer == "o":
+            return True
+        elif answer == "v":
+            State.overwrite_all = True
+            return True
+        elif answer == "a":
+            raise RecursionException("aborted")
+        elif answer == "l":
+            State.skip_all = True
+            return False
+        elif answer == "s":
+            return False
+
+
 def process_files(filenum_width, path, files, checksum_files):  # {{{1
     """ Read checksum files and compare hashes in one directory. """
 
@@ -294,31 +325,9 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
 
     # the checksum file will be overwritten -> ask how to proceed {{{2
     if checksum_files and args.create and os.path.isfile(
-            path + checksum_files[0]):
-        if State.skip_all:
-            State.skipped_overwrites += 1
-            return 0
-        if not State.overwrite_all:
-            # put a newline behind the dots
-            Output.clear_dot()
-            while True:
-                State.question_asked = True
-                answer = input(
-                    ">>> Checksum file exists: (O)verwrite, "
-                    "o(v)erwrite all, (s)kip, skip al(l), (a)bort? ")
-                if answer.lower() in "ovsla":
-                    break
-            if answer == "v":
-                State.overwrite_all = True
-            elif answer == "a":
-                raise RecursionException("aborted")
-            elif answer == "l":
-                State.skip_all = True
-                State.skipped_overwrites += 1
-                return 0
-            elif answer == "s":
-                State.skipped_overwrites += 1
-                return 0
+            path + checksum_files[0]) and not ask_checksum_overwrite():
+        State.skipped_overwrites += 1
+        return 0
 
     checksums_paths = [path + f for f in checksum_files]
     checksums = {}
