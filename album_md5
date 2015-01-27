@@ -356,7 +356,6 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
             State.md5_missing += 1
 
     # process hashing results (compare with or write to files) {{{2
-    hashed_bytes = 0
     if args.create or checksum_files:
         for filename in files:
             fullpath = path + filename
@@ -376,7 +375,7 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
                     OUT("Hashing '{0}'".format(fullpath))
                 try:
                     checksums[filename] = do_hash(fullpath)
-                    hashed_bytes += os.path.getsize(fullpath)
+                    State.total_hashed_bytes += os.path.getsize(fullpath)
                     State.files += 1
                     if not args.create:
                         if oldsum != checksums[filename]:
@@ -398,7 +397,6 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
             except OSError as error:
                 ERR(">>> '{0}' while writing checksum file '{1}'".format(
                     error.args[1], checksums_paths[0]))
-    return hashed_bytes
 
 
 def human_readable_size(value):  # {{{1
@@ -549,8 +547,7 @@ def main():  # {{{1
                     human_readable_size(total_size)))
 
         for directory in dirlist:
-            State.total_hashed_bytes += process_files(
-                width, directory[0], directory[2], directory[3])
+            process_files(width, directory[0], directory[2], directory[3])
             State.dircount += 1
     except KeyboardInterrupt:
         if args.create:
