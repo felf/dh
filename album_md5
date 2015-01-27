@@ -474,7 +474,7 @@ def print_results(duration):  # {{{1
             values.append(State.files_missing)
 
     # --paths is fast, we don’t need time stats and total_hashed_bytes == 0
-    if not args.create:
+    if not args.paths:
         labels.append("time elapsed")
         values.append("{0:3.1f} seconds ({1:0.1f} MiB/second)".format(
             duration,
