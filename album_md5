@@ -427,7 +427,10 @@ def print_results(duration):  # {{{1
     # output stuff, left and right column
     labels, values = [], []
 
-    labels.append(plural(State.dircount, "directory") + " processed")
+    labels.append("DIRECTORIES:")
+    values.append("")
+
+    labels.append("  processed")
     values.append(State.dircount)
 
     if args.skip > 0:
@@ -435,51 +438,54 @@ def print_results(duration):  # {{{1
         values.append(args.skip)
 
     if State.skipped_overwrites > 0:
-        labels.append("  of which skipped due to overwriting")
+        labels.append("  skipped for overwriting")
         values.append(State.skipped_overwrites)
 
     if State.md5_missing > 0:
-        labels.append("{0} without checksum file".format(
-            plural(State.md5_missing, "  directory")))
+        labels.append("  with no checksum file")
         values.append(State.md5_missing)
 
-    labels.append(plural(State.files, "file") + " hashed")
-    values.append(State.files)
-
-    if not args.create:
-        if not args.paths:
-            labels.append(
-                plural(State.passes, "  check passed", "  checks passed"))
-            values.append(State.passes)
-
-            labels.append(plural(
-                State.passes, "  check failed", "  checks failed"))
-            values.append(State.fails)
+    labels.append("FILES:")
+    values.append("")
 
     if not args.paths:
-        labels.append("  hashed bytes")
-        values.append("{0} ({1})".format(
-            State.total_hashed_bytes,
-            human_readable_size(State.total_hashed_bytes)))
+        labels.append("  hashed")
+        values.append(State.files)
+
+        if not args.create:
+            if not args.paths:
+                labels.append("  checks passed")
+                values.append(State.passes)
+
+                labels.append("  checks failed")
+                values.append(State.fails)
 
     if not args.create:
         if State.not_in_md5 > 0:
-            labels.append(plural(
-                State.not_in_md5, "file") + " not in any checksum file")
+            labels.append("  not in any checksum file")
             values.append(State.not_in_md5)
 
         if State.files_missing > 0:
-            labels.append("listed {0} missing".format(
-                plural(State.files_missing, "file")))
+            labels.append("  not found")
             values.append(State.files_missing)
 
-    # --paths is fast, we don’t need time stats and total_hashed_bytes == 0
     if not args.paths:
-        labels.append("time elapsed")
-        values.append("{0:3.1f} seconds ({1:0.1f} MiB/second)".format(
-            duration,
-            State.total_hashed_bytes / 1048576 / duration if duration != 0
-            else 0))
+        labels.append("VOLUME:")
+        values.append("")
+
+        if not args.paths:
+            labels.append("  hashed bytes")
+            values.append("{0} ({1})".format(
+                State.total_hashed_bytes,
+                human_readable_size(State.total_hashed_bytes)))
+
+        # --paths is fast, we don’t need time stats and total_hashed_bytes == 0
+        if not args.paths:
+            labels.append("  time elapsed")
+            values.append("{0:3.1f} seconds ({1:0.1f} MiB/second)".format(
+                duration,
+                State.total_hashed_bytes / 1048576 / duration if duration != 0
+                else 0))
 
     # get maximum width of items for both columns
     labelwidth = max(len(label) for label in labels)
@@ -497,7 +503,10 @@ def print_results(duration):  # {{{1
 
     # print results
     for label, value in zip(labels, values):
-        print(formatstring.format(label, value))
+        if value != "":
+            print(formatstring.format(label, value))
+        else:
+            print(label)
 
 
 def main():  # {{{1
