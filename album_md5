@@ -203,16 +203,16 @@ def gather_files(path, dirlist):  # {{{1
 
     Each entry is a tuple (path, size, filelist, checksum filelist). Directory
     paths end with a path separator. The 'size' for directories is the summed
-    size of all the files to be hashed in that dir. The size for files is the
-    actual filesize in byte. Directories that don't contain relevant files will
-    not be listed, even if any of their subdirectories actually do.
+    size of all the files to be hashed in that dir. Directories that don't
+    contain relevant files will not be listed, even if any of their
+    subdirectories actually do contain some.
 
     The resulting list looks like this:
     [
         ("/", 12345, ["/frotz", 12345], []),
         ("/A/B/", 96, [("/A/B/foo", 32), ("/A/B/bar", 64)], ["Checksums.md5"])
     ]
-        """
+    """
 
     if not os.path.isdir(path):
         return 0
