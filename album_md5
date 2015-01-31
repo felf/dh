@@ -391,7 +391,7 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
     if args.create:
         if files:
             try:
-                with open(checksums_paths[0], "w") as md5_file:
+                with open(args.filename, "w") as md5_file:
                     for item in files:
                         print("{0} *{1}".format(checksums[item], item),
                               file=md5_file)
