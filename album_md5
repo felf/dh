@@ -362,29 +362,30 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
 
             oldsum = oldsums.get(filename)
             # want to check, but file does not exist in MD5
-            if not args.create:
-                if not oldsum:
-                    ERR(">>> '{0}' not in any MD5 file.".format(
-                        filename if args.quiet == 0 else fullpath))
-                    State.not_in_md5 += 1
-                else:
-                    State.found_in_md5 += 1
+            if not args.create and not oldsum:
+                ERR(">>> '{0}' not in any checksum file.".format(
+                    # directory is printed separately with args.quiet == 0
+                    filename if args.quiet == 0 else fullpath))
+                State.not_in_md5 += 1
             # want to create or check the md5
-            elif not args.paths:
-                if args.verbose:
-                    OUT("Hashing '{0}'".format(fullpath))
-                try:
-                    checksums[filename] = do_hash(fullpath)
-                    State.total_hashed_bytes += os.path.getsize(fullpath)
-                    State.files += 1
-                    if not args.create:
-                        if oldsum != checksums[filename]:
-                            raise Exception(0, 'checksum error')
-                except Exception as exception:
-                    ERR(">>> {0}: '{1}'".format(exception.args[1], filename))
-                    State.fails += 1
-                else:
-                    State.passes += 1
+            else:
+                State.found_in_md5 += 1
+                if not args.paths:
+                    if args.verbose:
+                        OUT("Hashing '{0}'".format(fullpath))
+                    try:
+                        checksums[filename] = do_hash(fullpath)
+                        State.total_hashed_bytes += os.path.getsize(fullpath)
+                        State.files += 1
+                        if not args.create:
+                            if oldsum != checksums[filename]:
+                                raise Exception(0, 'checksum error')
+                    except Exception as exception:
+                        ERR(">>> {0}: '{1}'".format(
+                            exception.args[1], filename))
+                        State.fails += 1
+                    else:
+                        State.passes += 1
 
     # write new checksum file {{{2
     if args.create:
