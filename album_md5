@@ -68,10 +68,10 @@ def parse_arguments():  # {{{1
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
         '-c', '--create', action='store_true',
-        help='create checksums and write them to files')
+        help='hash everything and create checksum files')
     group.add_argument(
         '-p', '--paths', action='store_true',
-        help='only check paths, don\'t compare checksums (faster)')
+        help='only check paths, don\'t compare checksums (fast)')
     parser.add_argument(
         '-F', '--filename', action='store', default='Checksums.md5',
         metavar='name',
@@ -82,7 +82,7 @@ def parse_arguments():  # {{{1
         help='skip given number of dirs (to resume an aborted run)')
     parser.add_argument(
         '-l', '--follow-links', action='store_true',
-        help='follow symlink instead of ignoring them')
+        help='follow symlinks instead of ignoring them')
     parser.add_argument(
         '-n', '--number', action='store', default=-1, type=int, metavar='n',
         help='only process this many dirs (after the skipped ones)')
