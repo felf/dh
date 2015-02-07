@@ -17,6 +17,7 @@ class Output(object):  # {{{1
 
     # whether the last thing printed was a progress dot
     dot_last = False
+    output_shown = False
 
     @staticmethod
     def clear_dot():  # {{{2
@@ -27,12 +28,18 @@ class Output(object):  # {{{1
             Output.dot_last = False
 
     @staticmethod
+    def print_separator(width):
+        if Output.output_shown:
+            print("-" * width)
+
+    @staticmethod
     def dot():  # {{{2
         """ Output a progress dot. """
 
         print(".", end="")
         sys.stdout.flush()
         Output.dot_last = True
+        Output.output_shown = True
 
     @staticmethod
     def print(*arguments):  # {{{2
@@ -40,6 +47,7 @@ class Output(object):  # {{{1
 
         Output.clear_dot()
         print(*arguments)
+        Output.output_shown = True
 
     @staticmethod
     def error(*arguments):  # {{{2
@@ -47,6 +55,7 @@ class Output(object):  # {{{1
 
         Output.clear_dot()
         print(*arguments, file=sys.stderr)
+        Output.output_shown = True
 
 OUT = Output.print
 ERR = Output.error
@@ -568,11 +577,7 @@ def print_results(duration):  # {{{1
     formatstring = "{0:" + str(labelwidth) + "}: {1:>" + str(valuewidth) + "}"
 
     # separation line between process output and result table
-    if args.quiet < 3 and any(
-            (State.not_in_md5, State.files_missing, State.md5_missing,
-             State.files, State.dircount)
-    ) or State.question_asked:
-        print("-" * (labelwidth + valuewidth + 2))
+    Output.print_separator(labelwidth + valuewidth + 2)
 
     # print results
     for label, value in zip(labels, values):
