@@ -153,6 +153,9 @@ def parse_arguments():  # {{{1
         '-p', '--paths', action='store_true',
         help='only check paths, don\'t compare checksums (fast)')
     parser.add_argument(
+        '-a', '--all', action='store_true',
+        help='include hidden files and directories')
+    parser.add_argument(
         '-F', '--filename', action='store', default='Checksums.md5',
         metavar='name',
         help='name of checksum files (default: Checksums.md5, use \'all\' to '
@@ -302,7 +305,7 @@ def gather_files(path, dirlist):  # {{{1
     totalsize = 0
 
     # get and categorise directory content {{{2
-    content = os.listdir(path)
+    content = [item for item in os.listdir(path) if item[0] != "." or args.all]
     dirs = []
     files = []
     for item in content:
