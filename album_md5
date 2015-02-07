@@ -306,7 +306,7 @@ def ask_checksum_overwrite():
 def process_files(filenum_width, path, files, checksum_files):  # {{{1
     """ Read checksum files and compare hashes in one directory. """
 
-    # progress output {{{2
+    # progress output for this directory {{{2
     # full output mode: print number of files and name of directory
     if args.quiet == 0 and (checksum_files or args.create):
         OUT(
@@ -316,11 +316,11 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
                 "." + path[len(cwd):] if path.startswith(cwd) else path)
         )
 
-    if not checksum_files and not args.create and args.quiet < 3:
+    # want to verify checksums, but no checksum file available
+    if not any([args.create, checksum_files, args.quiet >= 3]):
         if not args.no_missing_checksums:
             OUT("No checksum file in .{0}".format(
                 path[len(cwd):] if path.startswith(cwd) else path))
-
     # reduced output: only print a dot for each directory
     elif args.quiet == 1:
         Output.dot()
