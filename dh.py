@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
-""" album-md5 creates and verifies checksums recursively. """
+"""
+dh.py (dirhash) - create and verify checksums for directories recursively.
+"""
 
 import argparse
 import hashlib
@@ -153,7 +155,7 @@ def parse_arguments():  # {{{1
                'filename) will be hashed and either stored in the MD5 file or '
                'checked against it, depending on operation mode. If no '
                'operation mode is given, checking mode will be selected.',
-        prog='album-md5')
+        prog='dh.py')
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
         '-c', '--create', action='store_true',
