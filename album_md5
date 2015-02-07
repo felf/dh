@@ -68,18 +68,20 @@ class ChecksumFiles(object):  # {{{1
         self._file = None
 
         # read entries in existing checksum files
-        for cspath in self._csfiles:
+        if not args.create:
+            for cspath in self._csfiles:
+                try:
+                    for line in open(cspath):
+                        filename, md5 = line[34:-1], line[:32]
+                        self._entries[filename] = md5
+                except OSError as error:
+                    ERR(">>> '{0}' while reading checksum file '{1}'".format(
+                        error.args[1], cspath))
+        else:
             try:
-                for line in open(cspath):
-                    filename, md5 = line[34:-1], line[:32]
-                    self._entries[filename] = md5
-            except OSError as error:
-                ERR(">>> '{0}' while reading checksum file '{1}'".format(
-                    error.args[1], cspath))
-            try:
-                if args.create:
+                if args.filename != "all":
                     # TODO: "a" if args.update else "w"
-                    self._file = open(cspath, "w")
+                    self._file = open(os.path.join(path, args.filename), "w")
             except OSError as error:
                 ERR(">>> '{0}' while opening checksum file '{1}'".format(
                     error.args[1], cspath))
@@ -103,7 +105,7 @@ class ChecksumFiles(object):  # {{{1
         if args.filename == 'all':
             try:
                 csfpath = os.path.join(self._path, filename + ".md5")
-                with open(csfpath) as csfile:
+                with open(csfpath, "w") as csfile:
                     print("{0} *{1}".format(checksum, filename), file=csfile)
             except OSError as error:
                 ERR(">>> '{0}' while creating checksum file '{1}'".format(
@@ -191,11 +193,7 @@ def parse_arguments():  # {{{1
     # clean-up of input
     if parsed_args.quiet > 3:
         parsed_args.quiet = 3
-    if parsed_args.filename == "all":
-        if parsed_args.create:
-            print("Error: cannot combine '-F all' with '-c'.", file=sys.stderr)
-            exit(1)
-    else:
+    if parsed_args.filename != "all":
         parsed_args.filename = os.path.basename(parsed_args.filename)
 
     # use current dir if no dir to process was given
