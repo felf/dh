@@ -266,6 +266,9 @@ def do_hash(path):  # {{{1
 
     # thanks: http://stackoverflow.com/questions/1131220/get-md5-hash-of-big-\
     # files-in-python
+    if args.verbose:
+        OUT("Hashing '{0}'".format(path))
+
     md5 = hashlib.md5()
     with open(path, "rb") as infile:
         while True:
@@ -273,6 +276,7 @@ def do_hash(path):  # {{{1
             if not data:
                 break
             md5.update(data)
+    State.total_hashed_bytes += os.path.getsize(path)
     return md5.hexdigest()
 
 
@@ -445,8 +449,6 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
             else:
                 State.found_in_md5 += 1
                 if not args.paths:
-                    if args.verbose:
-                        OUT("Hashing '{0}'".format(fullpath))
                     try:
                         match = None
                         if args.create:
@@ -455,7 +457,6 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
                         else:
                             match = checksums.verify_hash(
                                 filename, do_hash(fullpath))
-                        State.total_hashed_bytes += os.path.getsize(fullpath)
                         State.files += 1
                         if match is not None and not match:
                             raise Exception(0, 'checksum error')
