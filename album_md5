@@ -389,25 +389,32 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
     """ Read checksum files and compare hashes in one directory. """
 
     # progress output for this directory {{{2
-    # full output mode: print number of files and name of directory
-    if args.quiet == 0 and (checksum_files or args.create):
-        OUT(
-            "Skipping " if State.skip_all else
-            "Processing {0:>{1}} files in {2}".format(
-                len(files), filenum_width,
-                "." + path[len(cwd):] if path.startswith(cwd) else path)
-        )
-
     # want to verify checksums, but no checksum file available
-    if not any([args.create, checksum_files, args.quiet >= 3]):
-        if not args.no_missing_checksums:
+    if not args.create and not checksum_files:
+        if args.quiet < 3 and not args.no_missing_checksums:
             OUT("No checksum file in .{0}".format(
                 path[len(cwd):] if path.startswith(cwd) else path))
-    # reduced output: only print a dot for each directory
-    elif args.quiet == 1:
-        Output.dot()
+        State.md5_missing += 1
+        return 0
+
+    if State.skip_all and args.create and checksum_files:
+        OUT("Skipping overwrite in {0}".format(
+                "." + path[len(cwd):] if path.startswith(cwd) else path))
+        State.skipped_overwrites += 1
+        return 0
+    else:
+        # full output mode: print number of files and name of directory
+        if args.quiet == 0:
+            OUT("Processing {0:>{1}} files in {2}".format(
+                    len(files), filenum_width,
+                    "." + path[len(cwd):] if path.startswith(cwd) else path)
+            )
+        # reduced output: only print a dot for each directory
+        elif args.quiet == 1:
+            Output.dot()
 
     # the checksum file will be overwritten -> ask how to proceed {{{2
+    # TODO: -F all
     if checksum_files and args.create and os.path.isfile(
             path + checksum_files[0]) and not ask_checksum_overwrite():
         State.skipped_overwrites += 1
@@ -415,57 +422,43 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
 
     checksums = ChecksumFiles(path, checksum_files)
     old_sums = checksums.entries()
+    if args.create:
+        files_to_hash = files
+    else:
+        files_to_hash = set(old_sums.keys())
+        files_to_hash.update(files)
+        files_to_hash = list(files_to_hash)
+        files_to_hash.sort()
 
-    # read entries in MD5 file {{{2
-    if not args.create:
-        if checksum_files:
-            try:
-                filenames = list(old_sums.keys())
-                filenames.sort()
-                for filename in filenames:
-                    if filename not in files:
-                        ERR(">>> '{0}': does not exist: '{1}'".format(
-                            args.filename, filename))
-                        State.files_missing += 1
-            except OSError as error:
-                ERR(">>> '{0}' while reading checksum file '{1}'".format(
-                    error.args[1], args.filename))
-        elif files:
-            State.md5_missing += 1
-
-    # process hashing results (compare with or write to files) {{{2
-    if args.create or checksum_files:
-        for filename in files:
-            fullpath = path + filename
-
-            old_sum = old_sums.get(filename)
-            # want to check, but file does not exist in MD5
-            if not args.create and not old_sum:
+    for filename in files_to_hash:
+        fullpath = path + filename
+        # TODO: -F all
+        # get hash and check it agains existing hash from checksum file
+        if not args.create:
+            if not os.path.isfile(fullpath):
+                ERR(">>> '{0}': does not exist: '{1}'".format(
+                    args.filename, filename))
+                State.files_missing += 1
+                continue
+            if not filename in old_sums.keys():
                 ERR(">>> '{0}' not in any checksum file.".format(
                     # directory is printed separately with args.quiet == 0
                     filename if args.quiet == 0 else fullpath))
                 State.not_in_md5 += 1
-            # want to create or check the md5
+                continue
+            State.found_in_md5 += 1
+            match = checksums.verify_hash(filename, do_hash(fullpath))
+            if match:
+                State.passes += 1
             else:
-                State.found_in_md5 += 1
-                if not args.paths:
-                    try:
-                        match = None
-                        if args.create:
-                            checksums.write_hash(
-                                filename, do_hash(fullpath))
-                        else:
-                            match = checksums.verify_hash(
-                                filename, do_hash(fullpath))
-                        State.files += 1
-                        if match is not None and not match:
-                            raise Exception(0, 'checksum error')
-                    except Exception as exception:
-                        ERR(">>> {0}: '{1}'".format(
-                            exception.args[1], filename))
-                        State.fails += 1
-                    else:
-                        State.passes += 1
+                ERR(">>> checksum error: '{0}'".format(filename))
+                State.fails += 1
+
+        # get hash and write it into checksum file
+        else:
+            checksums.write_hash(filename, do_hash(fullpath))
+        # TODO: right place for this here?
+        State.files += 1
 
 
 def human_readable_size(value):  # {{{1
