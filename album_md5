@@ -448,6 +448,9 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
                 State.not_in_md5 += 1
                 continue
             State.found_in_md5 += 1
+            if args.paths:
+                State.files += 1
+                continue
             match = checksums.verify_hash(filename, do_hash(fullpath))
             if match:
                 State.passes += 1
