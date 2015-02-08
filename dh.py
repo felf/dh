@@ -546,18 +546,20 @@ def print_results(duration):  # {{{1
         stats.append(("VOLUME:", ""))
 
         if not args.paths:
-            stats.append(("  hashed bytes", "{0} ({1})".format(
-                State.total_hashed_bytes,
-                human_readable_size(State.total_hashed_bytes))))
+            stats.append(("  hashed bytes",
+                0 if State.total_hashed_bytes == 0 else
+                "{0} ({1})".format(
+                    State.total_hashed_bytes,
+                    human_readable_size(State.total_hashed_bytes))))
 
         # --paths is fast, we don’t need time stats and total_hashed_bytes == 0
         if not args.paths:
-            stats.append((
-                "  time elapsed",
-                "{0:3.1f} seconds ({1:0.1f} MiB/second)".format(
-                    duration,
+            value = "{0:3.1f} seconds".format(duration)
+            if State.total_hashed_bytes != 0:
+                value += " ({0:0.1f} MiB/second)".format(
                     State.total_hashed_bytes / 1048576 / duration \
-                    if duration != 0 else 0)))
+                    if duration != 0 else 0)
+            stats.append(("  time elapsed", value))
 
     # get maximum width of items for both columns
     labelwidth = max(len(stat[0]) for stat in stats)
