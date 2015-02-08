@@ -124,6 +124,7 @@ class ChecksumFiles(object):  # {{{1
         if args.filename == 'all':
             try:
                 csfpath = os.path.join(self._path, filename + ".md5")
+                # TODO: ask for overwriting here
                 with open(csfpath, "w") as csfile:
                     print("{0} *{1}".format(checksum, filename), file=csfile)
             except OSError as error:
@@ -435,7 +436,7 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
             Output.dot()
 
     # the checksum file will be overwritten -> ask how to proceed {{{2
-    # TODO: -F all
+    # TODO: -F all (right now, it asks only for the dir's first file)
     if checksum_files and args.create and os.path.isfile(
             path + checksum_files[0]) and not ask_checksum_overwrite():
         State.skipped_overwrites += 1
@@ -453,7 +454,6 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
 
     for filename in files_to_hash:
         fullpath = path + filename
-        # TODO: -F all
         # get hash and check it agains existing hash from checksum file
         if not args.create:
             if not os.path.isfile(fullpath):
