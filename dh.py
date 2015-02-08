@@ -80,7 +80,8 @@ class ChecksumFiles(object):  # {{{1
         # the handle to the currently active checksum file
         self._file = None
 
-        # read entries in existing checksum files
+        # read entries in existing checksum files (but not if creating from
+        # scratch, then we don't care what's already there)
         if not args.create:
             for cspath in self._csfiles:
                 try:
@@ -90,14 +91,19 @@ class ChecksumFiles(object):  # {{{1
                 except OSError as error:
                     ERR(">>> '{0}' while reading checksum file '{1}'".format(
                         error.args[1], cspath))
-        else:
-            try:
-                if args.filename != "all":
-                    # TODO: "a" if args.update else "w"
-                    self._file = open(os.path.join(path, args.filename), "w")
-            except OSError as error:
-                ERR(">>> '{0}' while opening checksum file '{1}'".format(
-                    error.args[1], cspath))
+
+    def _get_checksum_file(self):  # {{{2
+        """ Encapsulate write access to checksum file. """
+
+        try:
+            if args.filename != "all" and self._file is None:
+                path = os.path.join(self._path, args.filename)
+                # TODO: "a" if args.update else "w"
+                self._file = open(path, "w")
+        except OSError as error:
+            ERR(">>> '{0}' while opening checksum file '{1}'".format(
+                error.args[1], path))
+        return self._file
 
     def entries(self):  # {{{2
         """ Getter to retrieve all listed checksums. """
@@ -125,7 +131,9 @@ class ChecksumFiles(object):  # {{{1
                     error.args[1], csfpath))
         else:
             try:
-                print("{0} *{1}".format(checksum, filename), file=self._file)
+                print(
+                    "{0} *{1}".format(checksum, filename),
+                    file=self._get_checksum_file())
             except OSError as error:
                 ERR(">>> '{0}' while writing to checksum file '{1}'".format(
                     error.args[1], self))
