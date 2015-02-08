@@ -564,14 +564,15 @@ def print_results(duration):  # {{{1
     valuewidth = math.floor(max(
         0 if stat[1] == 0 or isinstance(stat[1], str) else
         math.log10(stat[1]) for stat in stats)) + 1
-    formatstring = "{0:" + str(labelwidth) + "}: {1:>" + str(valuewidth) + "}"
 
     # separation line between process output and result table
     Output.print_separator(labelwidth + valuewidth + 2)
 
     # print results
     for stat in stats:
-        print(formatstring.format(stat[0], stat[1]))
+        print("{label:{labelwidth}}: {value:>{valuewidth}}".format(
+            label=stat[0], labelwidth=labelwidth,
+            value=stat[1], valuewidth=valuewidth))
 
 
 def main():  # {{{1
