@@ -101,6 +101,42 @@ class ChecksumFiles(object):  # {{{1
                     ERR(">>> '{0}' while reading checksum file '{1}'".format(
                         error.args[1], cspath))
 
+    def __enter__(self):  # {{{2
+        """ Make the class usable with the "with" statement - entry point. """
+
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):  # {{{2
+        """ Cleanup at with-block's end - write and close checksum files. """
+
+        if self._file:
+            self._file.close()
+        # Rewrite updated checksum files b/c they may not be sorted now.
+        # But if there are no previous csfiles, there's nothing to sort.
+        if self._csfiles:
+            for cspath in self._updated_csfiles:
+                if args.filename == "all":
+                    # first get all entries of the required checksum file
+                    filenames = [
+                        entry for entry in self._entries
+                        if self._entries[entry][1] == cspath]
+                else:
+                    filenames = list(self._entries.keys())
+                if filenames:
+                    filenames.sort()
+                    try:
+                        with open(cspath, "w") as csfile:
+                            for entry in filenames:
+                                print("{0} *{1}".format(
+                                    self._entries[entry][0], entry),
+                                      file=csfile)
+                    except KeyboardInterrupt:
+                        ERR("\nWARNING! Interrupted while rewriting '{0}'\n"
+                            "Data loss is possible.".format(cspath))
+                        raise
+                else:
+                    os.unlink(cspath)
+
     def _get_checksum_file(self):  # {{{2
         """ Encapsulate write access to checksum file. """
 
@@ -174,36 +210,6 @@ class ChecksumFiles(object):  # {{{1
 
         entry = self._entries.get(filename)
         return None if entry is None else entry[0] == checksum
-
-    def __del__(self):  # {{{2
-        if self._file:
-            self._file.close()
-        # Rewrite updated checksum files b/c they may not be sorted now.
-        # If there are no previous csfiles, there's nothing to sort.
-        if self._csfiles:
-            for cspath in self._updated_csfiles:
-                if args.filename == "all":
-                    # first get all entries of the required checksum file
-                    filenames = [
-                        entry for entry in self._entries
-                        if self._entries[entry][1] == cspath]
-                else:
-                    filenames = list(self._entries.keys())
-                if filenames:
-                    filenames.sort()
-                    try:
-                        with open(cspath, "w") as csfile:
-                            for entry in filenames:
-                                print("{0} *{1}".format(
-                                    self._entries[entry][0], entry), file=csfile)
-                    except KeyboardInterrupt:
-                        ERR("\nWARNING! Interrupted while rewriting '{0}'\n"
-                            "Data loss is possible.".format(cspath))
-                        # TODO: ignored in destructor
-                        raise
-
-                else:
-                    os.unlink(cspath)
 
 
 def parse_arguments():  # {{{1
@@ -510,57 +516,58 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
         State.skipped_overwrites += 1
         return 0
 
-    checksums = ChecksumFiles(path, checksum_files)
-    old_sums = checksums.entries()
-    if args.create:
-        files_to_hash = files
-    else:
-        files_to_hash = set(old_sums.keys())
-        files_to_hash.update(files)
-        files_to_hash = list(files_to_hash)
-        files_to_hash.sort()
-
-    for filename in files_to_hash:
-        fullpath = path + filename
-        # get hash and check it agains existing hash from checksum file
-
-        # a missing file can only come from a checksum file entry, so no check
-        # for args.(create|update) necessary
-        if not os.path.isfile(fullpath):
-            ERR(">>> '{0}': does not exist: '{1}'".format(
-                os.path.basename(old_sums[filename][1]) if args.quiet == 0
-                else old_sums[filename][1],
-                filename))
-            State.files_missing += 1
-            if args.update:
-                checksums.remove_entry(filename)
-            continue
-
-        if not filename in old_sums.keys():
-            if not args.create:
-                State.not_in_md5 += 1
-                if not args.update:
-                    ERR(">>> '{0}' not in any checksum file.".format(
-                        # directory is printed separately with args.quiet == 0
-                        filename if args.quiet == 0 else fullpath))
-                    # nothing more to do in read-only check mode
-                    continue
+    with ChecksumFiles(path, checksum_files) as checksums:
+        old_sums = checksums.entries()
+        if args.create:
+            files_to_hash = files
         else:
-            State.found_in_md5 += 1
-            if args.paths or args.update:
+            files_to_hash = set(old_sums.keys())
+            files_to_hash.update(files)
+            files_to_hash = list(files_to_hash)
+            files_to_hash.sort()
+
+        for filename in files_to_hash:
+            fullpath = path + filename
+            # get hash and check it agains existing hash from checksum file
+
+            # a missing file can only come from a checksum file entry, so no
+            # check for args.(create|update) necessary
+            if not os.path.isfile(fullpath):
+                ERR(">>> '{0}': does not exist: '{1}'".format(
+                    os.path.basename(old_sums[filename][1]) if args.quiet == 0
+                    else old_sums[filename][1],
+                    filename))
+                State.files_missing += 1
+                if args.update:
+                    checksums.remove_entry(filename)
                 continue
 
-        checksum = do_hash(fullpath)
-        State.hashed_files += 1
-        if args.update or args.create:
-            checksums.write_hash(filename, checksum)
-        else:
-            match = checksums.verify_hash(filename, checksum)
-            if match:
-                State.passes += 1
+            if not filename in old_sums.keys():
+                if not args.create:
+                    State.not_in_md5 += 1
+                    if not args.update:
+                        ERR(">>> '{0}' not in any checksum file.".format(
+                            # full directory path is already printed with
+                            # args.quiet == 0, so don't repeat here
+                            filename if args.quiet == 0 else fullpath))
+                        # nothing more to do in read-only check mode
+                        continue
             else:
-                ERR(">>> checksum error: '{0}'".format(filename))
-                State.fails += 1
+                State.found_in_md5 += 1
+                if args.paths or args.update:
+                    continue
+
+            checksum = do_hash(fullpath)
+            State.hashed_files += 1
+            if args.update or args.create:
+                checksums.write_hash(filename, checksum)
+            else:
+                match = checksums.verify_hash(filename, checksum)
+                if match:
+                    State.passes += 1
+                else:
+                    ERR(">>> checksum error: '{0}'".format(filename))
+                    State.fails += 1
 
 
 def human_readable_size(value):  # {{{1
