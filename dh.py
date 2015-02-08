@@ -455,34 +455,38 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
     for filename in files_to_hash:
         fullpath = path + filename
         # get hash and check it agains existing hash from checksum file
-        if not args.create:
-            if not os.path.isfile(fullpath):
-                ERR(">>> '{0}': does not exist: '{1}'".format(
-                    args.filename, filename))
-                State.files_missing += 1
-                continue
-            if not filename in old_sums.keys():
+
+        # a missing file can only come from a checksum file entry, so no check
+        # for not args.create necessary
+        if not os.path.isfile(fullpath):
+            ERR(">>> '{0}': does not exist: '{1}'".format(
+                args.filename, filename))
+            State.files_missing += 1
+            continue
+
+        if not filename in old_sums.keys():
+            if not args.create:
                 ERR(">>> '{0}' not in any checksum file.".format(
                     # directory is printed separately with args.quiet == 0
                     filename if args.quiet == 0 else fullpath))
                 State.not_in_md5 += 1
                 continue
+        else:
             State.found_in_md5 += 1
             if args.paths:
-                State.hashed_files += 1
                 continue
-            match = checksums.verify_hash(filename, do_hash(fullpath))
+
+        checksum = do_hash(fullpath)
+        State.hashed_files += 1
+        if args.create:
+            checksums.write_hash(filename, checksum)
+        else:
+            match = checksums.verify_hash(filename, checksum)
             if match:
                 State.passes += 1
             else:
                 ERR(">>> checksum error: '{0}'".format(filename))
                 State.fails += 1
-
-        # get hash and write it into checksum file
-        else:
-            checksums.write_hash(filename, do_hash(fullpath))
-        # TODO: right place for this here?
-        State.hashed_files += 1
 
 
 def human_readable_size(value):  # {{{1
