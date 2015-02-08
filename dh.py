@@ -146,7 +146,8 @@ class ChecksumFiles(object):  # {{{1
 
         if args.filename == 'all':
             try:
-                csfpath = os.path.join(self._path, filename + ".md5")
+                # path is guaranteed to end with "/" (2. stmt in gather_files)
+                csfpath = self._path + filename + ".md5"
                 # TODO: ask for overwriting here
                 with open(csfpath, "a" if args.update else "w") as csfile:
                     print("{0} *{1}".format(checksum, filename), file=csfile)
@@ -154,7 +155,7 @@ class ChecksumFiles(object):  # {{{1
                     # record new checksum item for use in self.__del__
                     self._entries[filename] = (checksum, csfpath)
             except OSError as error:
-                ERR(">>> '{0}' while creating checksum file '{1}'".format(
+                ERR(">>> '{0}' while writing to checksum file '{1}'".format(
                     error.args[1], csfpath))
         else:
             try:
@@ -195,9 +196,8 @@ class ChecksumFiles(object):  # {{{1
                     filenames.sort()
                     with open(cspath, "w") as csfile:
                         for entry in filenames:
-                            print(
-                                "{0} *{1}".format(self._entries[entry][0], entry),
-                                file=csfile)
+                            print("{0} *{1}".format(
+                                self._entries[entry][0], entry), file=csfile)
                 else:
                     os.unlink(cspath)
 
@@ -629,10 +629,10 @@ def print_results(duration):  # {{{1
 
         if not args.paths:
             stats.append(("  hashed bytes",
-                0 if State.total_hashed_bytes == 0 else
-                "{0} ({1})".format(
-                    State.total_hashed_bytes,
-                    human_readable_size(State.total_hashed_bytes))))
+                          0 if State.total_hashed_bytes == 0 else
+                          "{0} ({1})".format(
+                              State.total_hashed_bytes,
+                              human_readable_size(State.total_hashed_bytes))))
 
         # --paths is fast, we don’t need time stats and total_hashed_bytes == 0
         if not args.paths:
