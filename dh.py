@@ -31,6 +31,8 @@ class Output(object):  # {{{1
 
     @staticmethod
     def print_separator(width):
+        """ Print the stats table header only if other output came before. """
+
         if Output.output_shown:
             print("-" * width)
 
@@ -411,16 +413,15 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
 
     if State.skip_all and args.create and checksum_files:
         OUT("Skipping overwrite in {0}".format(
-                "." + path[len(cwd):] if path.startswith(cwd) else path))
+            "." + path[len(cwd):] if path.startswith(cwd) else path))
         State.skipped_overwrites += 1
         return 0
     else:
         # full output mode: print number of files and name of directory
         if args.quiet == 0:
             OUT("Processing {0:>{1}} files in {2}".format(
-                    len(files), filenum_width,
-                    "." + path[len(cwd):] if path.startswith(cwd) else path)
-            )
+                len(files), filenum_width,
+                "." + path[len(cwd):] if path.startswith(cwd) else path))
         # reduced output: only print a dot for each directory
         elif args.quiet == 1:
             Output.dot()
