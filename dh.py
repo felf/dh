@@ -675,7 +675,7 @@ def print_results(duration):  # {{{1
     stats.append(("FILES:", ""))
 
     if not args.create:
-        stats.append(("  found in checksum file", State.found_in_md5))
+        stats.append(("  listed in checksum file", State.found_in_md5))
 
         # number of files that had an entry in an existing md5 file
         if State.not_in_md5 > 0:
