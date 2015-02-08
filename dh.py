@@ -506,88 +506,72 @@ def print_results(duration):  # {{{1
     """ Put all the statistics into a nice tabular format to read. """
 
     # output stuff, left and right column
-    labels, values = [], []
+    stats = []
 
-    labels.append("DIRECTORIES:")
-    values.append("")
+    stats.append(("DIRECTORIES:", ""))
 
-    labels.append("  processed")
-    values.append(State.dircount)
+    stats.append(("  processed", State.dircount))
 
     if args.skip > 0:
-        labels.append("  after skipping")
-        values.append(args.skip)
+        stats.append(("  after skipping", args.skip))
 
     if State.skipped_overwrites > 0:
-        labels.append("  skipped for overwriting")
-        values.append(State.skipped_overwrites)
+        stats.append(("  skipped for overwriting", State.skipped_overwrites))
 
     if State.md5_missing > 0:
-        labels.append("  with no checksum file")
-        values.append(State.md5_missing)
+        stats.append(("  with no checksum file", State.md5_missing))
 
-    labels.append("FILES:")
-    values.append("")
+    stats.append(("FILES:", ""))
 
     if not args.create:
-        labels.append("  found in checksum file")
-        values.append(State.found_in_md5)
+        stats.append(("  found in checksum file", State.found_in_md5))
 
         # number of files that had an entry in an existing md5 file
         if State.not_in_md5 > 0:
-            labels.append("  not in checksum file")
-            values.append(State.not_in_md5)
+            stats.append(("  not in checksum file", State.not_in_md5))
 
         if State.files_missing > 0:
-            labels.append("  listed, but not found")
-            values.append(State.files_missing)
+            stats.append(("  listed, but not found", State.files_missing))
 
     if not args.paths:
-        labels.append("  hashed")
-        values.append(State.files)
+        stats.append(("  hashed", State.files))
 
         if not args.create:
             if not args.paths:
-                labels.append("  checks passed")
-                values.append(State.passes)
+                stats.append(("  checks passed", State.passes))
 
-                labels.append("  checks failed")
-                values.append(State.fails)
+                stats.append(("  checks failed", State.fails))
 
     if not args.paths:
-        labels.append("VOLUME:")
-        values.append("")
+        stats.append(("VOLUME:", ""))
 
         if not args.paths:
-            labels.append("  hashed bytes")
-            values.append("{0} ({1})".format(
+            stats.append(("  hashed bytes", "{0} ({1})".format(
                 State.total_hashed_bytes,
-                human_readable_size(State.total_hashed_bytes)))
+                human_readable_size(State.total_hashed_bytes))))
 
         # --paths is fast, we don’t need time stats and total_hashed_bytes == 0
         if not args.paths:
-            labels.append("  time elapsed")
-            values.append("{0:3.1f} seconds ({1:0.1f} MiB/second)".format(
-                duration,
-                State.total_hashed_bytes / 1048576 / duration if duration != 0
-                else 0))
+            stats.append((
+                "  time elapsed",
+                "{0:3.1f} seconds ({1:0.1f} MiB/second)".format(
+                    duration,
+                    State.total_hashed_bytes / 1048576 / duration \
+                    if duration != 0 else 0)))
 
     # get maximum width of items for both columns
-    labelwidth = max(len(label) for label in labels)
+    labelwidth = max(len(stat[0]) for stat in stats)
     valuewidth = math.floor(max(
-        0 if value == 0 or isinstance(value, str) else
-        math.log10(value) for value in values)) + 1
+        0 if stat[1] == 0 or isinstance(stat[1], str) else
+        math.log10(stat[1]) for stat in stats)) + 1
     formatstring = "{0:" + str(labelwidth) + "}: {1:>" + str(valuewidth) + "}"
 
     # separation line between process output and result table
     Output.print_separator(labelwidth + valuewidth + 2)
 
     # print results
-    for label, value in zip(labels, values):
-        if value != "":
-            print(formatstring.format(label, value))
-        else:
-            print(label)
+    for stat in stats:
+        print(formatstring.format(stat[0], stat[1]))
 
 
 def main():  # {{{1
