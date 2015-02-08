@@ -238,7 +238,7 @@ def parse_arguments():  # {{{1
 
     parser.add_argument(
         'locations', metavar='dir', type=str, nargs='*',
-        help='a list of directories to parse (default is current dir)')
+        help='a list of directories to parse (default is .)')
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
         '-q', '--quiet', action='count', default=0,
