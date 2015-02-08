@@ -197,32 +197,39 @@ def parse_arguments():  # {{{1
     group.add_argument(
         '-u', '--update', action='store_true',
         help='only hash yet unhashed files and remove dead hash entries')
-    parser.add_argument(
+
+    group = parser.add_argument_group(title="file system options")
+    group.add_argument(
         '-a', '--all', action='store_true',
         help='include hidden files and directories')
-    parser.add_argument(
+    group.add_argument(
+        '-f', '--force', action='store_true',
+        help='force processing of files in dirs with subdirs')
+    group.add_argument(
+        '-l', '--follow-links', action='store_true',
+        help='follow symlinks instead of ignoring them')
+
+    group = parser.add_argument_group(title="checksum file options")
+    group.add_argument(
         '-F', '--filename', action='store', default='Checksums.md5',
         metavar='name',
         help='name of checksum files (default: Checksums.md5, use \'all\' to '
              'use any *.md5 file in checking mode)')
-    parser.add_argument(
-        '-s', '--skip', action='store', default=0, type=int, metavar='n',
-        help='skip given number of dirs (to resume an aborted run)')
-    parser.add_argument(
-        '-l', '--follow-links', action='store_true',
-        help='follow symlinks instead of ignoring them')
-    parser.add_argument(
-        '-n', '--number', action='store', default=-1, type=int, metavar='n',
-        help='only process this many dirs (after the skipped ones)')
-    parser.add_argument(
-        '-f', '--force', action='store_true',
-        help='force processing of files in dirs with subdirs')
-    parser.add_argument(
+    group.add_argument(
         '-o', '--overwrite', action='store_true',
         help='override checksum files without asking')
-    parser.add_argument(
+    group.add_argument(
         '--no-missing-checksums', action='store_true',
         help='Don\'t warn on directories without checksum files')
+
+    group = parser.add_argument_group(title="directory selection options")
+    group.add_argument(
+        '-n', '--number', action='store', default=-1, type=int, metavar='n',
+        help='only process this many dirs (after the skipped ones)')
+    group.add_argument(
+        '-s', '--skip', action='store', default=0, type=int, metavar='n',
+        help='skip given number of dirs (to resume an aborted run)')
+
     parser.add_argument(
         'locations', metavar='dir', type=str, nargs='*',
         help='a list of directories to parse (default is current dir)')
