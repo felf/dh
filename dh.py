@@ -233,7 +233,7 @@ class State(object):  # {{{1
     # number of directories skipped due to answer to overwrite question
     skipped_overwrites = 0
     # number of files processed
-    files = 0
+    hashed_files = 0
     # number of failed md5 checks
     fails = 0
     # number of passed md5 checks
@@ -461,7 +461,7 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
                 continue
             State.found_in_md5 += 1
             if args.paths:
-                State.files += 1
+                State.hashed_files += 1
                 continue
             match = checksums.verify_hash(filename, do_hash(fullpath))
             if match:
@@ -474,7 +474,7 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
         else:
             checksums.write_hash(filename, do_hash(fullpath))
         # TODO: right place for this here?
-        State.files += 1
+        State.hashed_files += 1
 
 
 def human_readable_size(value):  # {{{1
@@ -534,7 +534,7 @@ def print_results(duration):  # {{{1
             stats.append(("  listed, but not found", State.files_missing))
 
     if not args.paths:
-        stats.append(("  hashed", State.files))
+        stats.append(("  hashed", State.hashed_files))
 
         if not args.create:
             if not args.paths:
