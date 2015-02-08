@@ -12,7 +12,7 @@ import sys
 import time
 
 __prog_name__ = 'dh.py'
-__prog_version__ = "1.3.1"
+__prog_version__ = "1.4"
 
 cwd = os.getcwd()
 
@@ -23,6 +23,24 @@ class Output(object):  # {{{1
     # whether the last thing printed was a progress dot
     dot_last = False
     output_shown = False
+
+    @staticmethod
+    def colorstring(color):  # {{{2
+        """ Create the terminal escape sequence for the given colour. """
+
+        colors = {
+            'black':  '30',
+            'red':    '31',
+            'green':  '32',
+            'yellow': '33',
+            'blue':   '34',
+            'purple': '35',
+            'cyan':   '36',
+            'white':  '37'
+        }
+        return "\033[{0};{1}m".format(
+            "0" if color[0].islower() else "1",
+            colors.get(color.lower(), "0"))
 
     @staticmethod
     def clear_dot():  # {{{2
@@ -49,19 +67,26 @@ class Output(object):  # {{{1
         Output.output_shown = True
 
     @staticmethod
-    def print(*arguments):  # {{{2
+    def print(*what, file=sys.stdout):  # {{{2
         """ Output the given message. """
 
         Output.clear_dot()
-        print(*arguments)
+        for item in what:
+            if type(item) is str:
+                print(item, end="", file=file)
+            else:
+                print(Output.colorstring(item[0]) + item[1] + "\033[0;0m",
+                      end="", file=file)
+        print(file=file)
+        file.flush()
         Output.output_shown = True
 
     @staticmethod
-    def error(*arguments):  # {{{2
+    def error(*arguments, msg=""):  # {{{2
         """ Output a given message as error message. """
 
         Output.clear_dot()
-        print(*arguments, file=sys.stderr)
+        Output.print(("Red", msg), file=sys.stderr, *arguments)
         Output.output_shown = True
 
 OUT = Output.print
