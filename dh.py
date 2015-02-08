@@ -689,9 +689,16 @@ def print_results(duration):  # {{{1
 
         if not args.create and not args.update:
             if not args.paths:
-                stats.append(("  checks passed", State.passes))
+                stat = ["  checks passed", State.passes]
+                if State.passes != 0:
+                    stat.append("Green" if State.passes == State.hashed_files
+                                else "Yellow")
+                stats.append(stat)
 
-                stats.append(("  checks failed", State.fails))
+                stat = ["  checks failed", State.fails]
+                if State.fails > 0:
+                    stat.append("Red")
+                stats.append(stat)
 
     if not args.paths:
         stats.append(("VOLUME:", ""))
@@ -723,9 +730,14 @@ def print_results(duration):  # {{{1
 
     # print results
     for stat in stats:
-        print("{label:{labelwidth}}: {value:>{valuewidth}}".format(
-            label=stat[0], labelwidth=labelwidth,
-            value=stat[1], valuewidth=valuewidth))
+        print("{label:{labelwidth}}: ".format(
+            label=stat[0], labelwidth=labelwidth), end="")
+        value = "{value:>{valuewidth}}".format(
+            value=stat[1], valuewidth=valuewidth)
+        if len(stat) == 3:
+            Output.print((stat[2], value))
+        else:
+            print(value)
 
 
 def main():  # {{{1
