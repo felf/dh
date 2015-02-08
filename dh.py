@@ -92,7 +92,7 @@ class ChecksumFiles(object):  # {{{1
                 try:
                     for line in open(cspath):
                         filename, md5 = line[34:-1], line[:32]
-                        self._entries[filename] = md5
+                        self._entries[filename] = (md5, cspath)
                 except OSError as error:
                     ERR(">>> '{0}' while reading checksum file '{1}'".format(
                         error.args[1], cspath))
@@ -124,7 +124,7 @@ class ChecksumFiles(object):  # {{{1
     def verify_hash(self, filename, checksum):  # {{{2
         """ Look for the given hash/file in existing checksum files. """
 
-        old_sum = self._entries.get(filename)
+        old_sum = self._entries.get(filename)[0]
         if old_sum is None:
             return None
         return old_sum == checksum
@@ -147,7 +147,7 @@ class ChecksumFiles(object):  # {{{1
                     "{0} *{1}".format(checksum, filename),
                     file=self._get_checksum_file())
                 if args.update:
-                    self._entries[filename] = checksum
+                    self._entries[filename] = (checksum, self._csfiles[0])
                     self._updated = True
             except OSError as error:
                 ERR(">>> '{0}' while writing to checksum file '{1}'".format(
@@ -159,9 +159,8 @@ class ChecksumFiles(object):  # {{{1
         Return value: None if file is not listed, True/False depending on
         whether checksum is correct. """
 
-        if self._entries.get(filename) is None:
-            return None
-        return self._entries[filename] == checksum
+        entry = self._entries.get(filename)
+        return None if entry is None else entry[0] == checksum
 
     def __del__(self):  # {{{2
         if self._file:
@@ -499,7 +498,9 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
         # for args.(create|update) necessary
         if not os.path.isfile(fullpath):
             ERR(">>> '{0}': does not exist: '{1}'".format(
-                args.filename, filename))
+                os.path.basename(old_sums[filename][1]) if args.quiet == 0
+                else old_sums[filename][1],
+                filename))
             State.files_missing += 1
             if args.update:
                 checksums.remove_entry(filename)
