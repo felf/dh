@@ -191,10 +191,17 @@ class ChecksumFiles(object):  # {{{1
                     filenames = list(self._entries.keys())
                 if filenames:
                     filenames.sort()
-                    with open(cspath, "w") as csfile:
-                        for entry in filenames:
-                            print("{0} *{1}".format(
-                                self._entries[entry][0], entry), file=csfile)
+                    try:
+                        with open(cspath, "w") as csfile:
+                            for entry in filenames:
+                                print("{0} *{1}".format(
+                                    self._entries[entry][0], entry), file=csfile)
+                    except KeyboardInterrupt:
+                        ERR("\nWARNING! Interrupted while rewriting '{0}'\n"
+                            "Data loss is possible.".format(cspath))
+                        # TODO: ignored in destructor
+                        raise
+
                 else:
                     os.unlink(cspath)
 
