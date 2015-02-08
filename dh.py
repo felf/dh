@@ -75,8 +75,11 @@ class Output(object):  # {{{1
             if type(item) is str:
                 print(item, end="", file=file)
             else:
-                print(Output.colorstring(item[0]) + item[1] + "\033[0;0m",
-                      end="", file=file)
+                if args.no_color:
+                    print(item[1], end="", file=file)
+                else:
+                    print(Output.colorstring(item[0]) + item[1] + "\033[0;0m",
+                          end="", file=file)
         print(file=file)
         file.flush()
         Output.output_shown = True
@@ -296,10 +299,7 @@ def parse_arguments():  # {{{1
         '-s', '--skip', action='store', default=0, type=int, metavar='n',
         help='skip given number of dirs (to resume an aborted run)')
 
-    parser.add_argument(
-        'locations', metavar='dir', type=str, nargs='*',
-        help='a list of directories to parse (default is .)')
-    group = parser.add_mutually_exclusive_group()
+    group = parser.add_argument_group(title="output options")
     group.add_argument(
         '-q', '--quiet', action='count', default=0,
         help='less progress output (-q: print dots instead of paths, -qq: '
@@ -308,6 +308,11 @@ def parse_arguments():  # {{{1
     group.add_argument(
         '-v', '--verbose', action='store_true',
         help='print the file that is being checked')
+    group.add_argument(
+        '--no-color', action='store_true', help='don\'t use colours in output')
+    parser.add_argument(
+        'locations', metavar='dir', type=str, nargs='*',
+        help='a list of directories to parse (default is .)')
 
     parsed_args = parser.parse_args()
 
