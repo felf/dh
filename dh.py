@@ -540,8 +540,9 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
     # want to verify checksums, but no checksum file available
     if not args.create and not args.update and not checksum_files:
         if args.quiet < 3 and not args.no_missing_checksums:
-            OUT("No checksum file in .{0}".format(
-                path[len(cwd):] if path.startswith(cwd) else path))
+            WARN("'{0}'".format(
+                path[len(cwd):] if path.startswith(cwd) else path),
+            msg="No checksum file: ")
         State.md5_missing += 1
         return 0
 
@@ -782,9 +783,9 @@ def main():  # {{{1
             State.dircount += 1
     except KeyboardInterrupt:
         if args.create:
-            OUT("\nHashing aborted.")
+            WARN("\nHashing aborted.")
         else:
-            OUT("\nCheck aborted.")
+            WARN("\nCheck aborted.")
     except RecursionException:
         pass
     finally:
