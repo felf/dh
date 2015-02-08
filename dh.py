@@ -12,7 +12,7 @@ import sys
 import time
 
 __prog_name__ = 'dh.py'
-__prog_version__ = "1.3"
+__prog_version__ = "1.3.1"
 
 cwd = os.getcwd()
 
@@ -79,11 +79,15 @@ class ChecksumFiles(object):  # {{{1
         # whether each file has its own checksum file
         self._separate = args.filename == 'all'
         # a dict of all checksums in the current checksum file (filename: hash)
+        # key: filename, value: tuple(hash, checksum file)
         self._entries = {}
+        # items from _entries that shall be deleted at the end of update run
+        # key: checksum file path, value: list of filenames to remove
+        self._removed_entries = {}
         # the handle to the currently active checksum file
         self._file = None
-        # if the directory's checksum file was updated and is thus unsorted
-        self._updated = False
+        # checksum files that were modified during an update run
+        self._updated_csfiles = set()
 
         # read entries in existing checksum files (but not if creating from
         # scratch, then we don't care what's already there)
@@ -118,8 +122,16 @@ class ChecksumFiles(object):  # {{{1
     def remove_entry(self, filename):  # {{{2
         """ If update mode detects a dead checksum entry, delete it here. """
 
+        # were there already some entries removed from that file?
+        csfile = self._entries[filename][1]
+        to_remove = self._removed_entries.get(csfile)
+        if to_remove is None:
+            # if not, create new list for it
+            to_remove = self._removed_entries[csfile] = []
+        to_remove.append(filename)
+
         self._entries.pop(filename)
-        self._updated = True
+        self._updated_csfiles.add(csfile)
 
     def verify_hash(self, filename, checksum):  # {{{2
         """ Look for the given hash/file in existing checksum files. """
@@ -136,8 +148,11 @@ class ChecksumFiles(object):  # {{{1
             try:
                 csfpath = os.path.join(self._path, filename + ".md5")
                 # TODO: ask for overwriting here
-                with open(csfpath, "w") as csfile:
+                with open(csfpath, "a" if args.update else "w") as csfile:
                     print("{0} *{1}".format(checksum, filename), file=csfile)
+                if args.update:
+                    # record new checksum item for use in self.__del__
+                    self._entries[filename] = (checksum, csfpath)
             except OSError as error:
                 ERR(">>> '{0}' while creating checksum file '{1}'".format(
                     error.args[1], csfpath))
@@ -146,12 +161,12 @@ class ChecksumFiles(object):  # {{{1
                 print(
                     "{0} *{1}".format(checksum, filename),
                     file=self._get_checksum_file())
-                if args.update:
+                if args.update and self._csfiles:
                     self._entries[filename] = (checksum, self._csfiles[0])
-                    self._updated = True
+                    self._updated_csfiles.add(self._csfiles[0])
             except OSError as error:
                 ERR(">>> '{0}' while writing to checksum file '{1}'".format(
-                    error.args[1], self))
+                    error.args[1], self._csfiles[0]))
 
     def check(self, filename, checksum):  # {{{2
         """ Check the given data against existing checksums.
@@ -165,15 +180,26 @@ class ChecksumFiles(object):  # {{{1
     def __del__(self):  # {{{2
         if self._file:
             self._file.close()
-        # Rewrite checksum file b/c it may not be sorted after update.
-        # But if there are no previous csfiles, then no need to rewrite them.
-        if self._updated and args.filename != "all" and self._csfiles:
-            with open(self._csfiles[0], "w") as csfile:
-                filenames = list(self._entries.keys())
-                filenames.sort()
-                for entry in filenames:
-                    print("{0} *{1}".format(self._entries[entry], entry),
-                          file=csfile)
+        # Rewrite updated checksum files b/c they may not be sorted now.
+        # If there are no previous csfiles, there's nothing to sort.
+        if self._csfiles:
+            for cspath in self._updated_csfiles:
+                if args.filename == "all":
+                    # first get all entries of the required checksum file
+                    filenames = [
+                        entry for entry in self._entries
+                        if self._entries[entry][1] == cspath]
+                else:
+                    filenames = list(self._entries.keys())
+                if filenames:
+                    filenames.sort()
+                    with open(cspath, "w") as csfile:
+                        for entry in filenames:
+                            print(
+                                "{0} *{1}".format(self._entries[entry][0], entry),
+                                file=csfile)
+                else:
+                    os.unlink(cspath)
 
 
 def parse_arguments():  # {{{1
