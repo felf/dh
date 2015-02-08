@@ -144,8 +144,8 @@ class ChecksumFiles(object):  # {{{1
     def write_hash(self, filename, checksum):  # {{{2
         """ Add a new hash to the checksum file. """
 
-        if args.filename == 'all':
-            try:
+        try:
+            if args.filename == 'all':
                 # path is guaranteed to end with "/" (2. stmt in gather_files)
                 csfpath = self._path + filename + ".md5"
                 # TODO: ask for overwriting here
@@ -154,20 +154,17 @@ class ChecksumFiles(object):  # {{{1
                 if args.update:
                     # record new checksum item for use in self.__del__
                     self._entries[filename] = (checksum, csfpath)
-            except OSError as error:
-                ERR(">>> '{0}' while writing to checksum file '{1}'".format(
-                    error.args[1], csfpath))
-        else:
-            try:
+            else:
                 print(
                     "{0} *{1}".format(checksum, filename),
                     file=self._get_checksum_file())
+                csfpath = self._path + args.filename
                 if args.update and self._csfiles:
-                    self._entries[filename] = (checksum, self._csfiles[0])
-                    self._updated_csfiles.add(self._csfiles[0])
-            except OSError as error:
-                ERR(">>> '{0}' while writing to checksum file '{1}'".format(
-                    error.args[1], self._csfiles[0]))
+                    self._entries[filename] = (checksum, csfpath)
+                    self._updated_csfiles.add(csfpath)
+        except OSError as error:
+            ERR(">>> '{0}' while writing to checksum file '{1}'".format(
+                error.args[1], csfpath))
 
     def check(self, filename, checksum):  # {{{2
         """ Check the given data against existing checksums.
