@@ -11,6 +11,9 @@ import os
 import sys
 import time
 
+__prog_name__ = 'dh.py'
+__prog_version__ = "1.3"
+
 cwd = os.getcwd()
 
 
@@ -186,7 +189,7 @@ def parse_arguments():  # {{{1
                'filename) will be hashed and either stored in the MD5 file or '
                'checked against it, depending on operation mode. If no '
                'operation mode is given, checking mode will be selected.',
-        prog='dh.py')
+        prog=__prog_name__)
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
         '-c', '--create', action='store_true',
@@ -197,6 +200,9 @@ def parse_arguments():  # {{{1
     group.add_argument(
         '-u', '--update', action='store_true',
         help='only hash yet unhashed files and remove dead hash entries')
+    group.add_argument(
+        '-V', '--version', action='store_true',
+        help='print version information and exit')
 
     group = parser.add_argument_group(title="file system options")
     group.add_argument(
@@ -246,6 +252,9 @@ def parse_arguments():  # {{{1
     parsed_args = parser.parse_args()
 
     # clean-up of input
+    if parsed_args.version:
+        print("{0} version {1}".format(__prog_name__, __prog_version__))
+        exit(0)
     if parsed_args.quiet > 3:
         parsed_args.quiet = 3
     if parsed_args.filename != "all":
