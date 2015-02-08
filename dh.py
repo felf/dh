@@ -92,8 +92,17 @@ class Output(object):  # {{{1
         Output.print(("Red", msg), file=sys.stderr, *arguments)
         Output.output_shown = True
 
+    @staticmethod
+    def warn(*arguments, msg=""):  # {{{2
+        """ Convenience function: output a given message as error message. """
+
+        Output.clear_dot()
+        Output.print(("Yellow", msg), *arguments)
+        Output.output_shown = True
+
 OUT = Output.print
 ERR = Output.error
+WARN = Output.warn
 
 
 class ChecksumFiles(object):  # {{{1
@@ -563,7 +572,7 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
             # a missing file can only come from a checksum file entry, so no
             # check for args.(create|update) necessary
             if not os.path.isfile(fullpath):
-                ERR(">>> '{0}': does not exist: '{1}'".format(
+                WARN(">>> '{0}': does not exist: '{1}'".format(
                     os.path.basename(old_sums[filename][1]) if args.quiet == 0
                     else old_sums[filename][1],
                     filename))
@@ -576,7 +585,7 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
                 if not args.create:
                     State.not_in_md5 += 1
                     if not args.update:
-                        ERR(">>> '{0}' not in any checksum file.".format(
+                        WARN(">>> '{0}' not in any checksum file.".format(
                             # full directory path is already printed with
                             # args.quiet == 0, so don't repeat here
                             filename if args.quiet == 0 else fullpath))
@@ -712,12 +721,12 @@ def main():  # {{{1
         for location in args.locations:
             location = os.path.abspath(location)
             if not os.path.exists(location):
-                ERR(">>> '{0}' does not exist".format(location))
+                WARN(">>> '{0}' does not exist".format(location))
             else:
                 total_size = gather_files(location, dirlist)
 
         if len(dirlist) == 0:
-            ERR("Nothing worth checking found.")
+            WARN("Nothing worth checking found.")
             exit(0)
 
         # find out how many characters are needed for the file count column
