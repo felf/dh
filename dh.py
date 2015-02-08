@@ -89,7 +89,10 @@ class Output(object):  # {{{1
         """ Output a given message as error message. """
 
         Output.clear_dot()
-        Output.print(("Red", msg), file=sys.stderr, *arguments)
+        if msg != "":
+            Output.print(("Red", msg), *arguments, file=sys.stderr)
+        else:
+            Output.print(("Red", "".join(arguments)), file=sys.stderr)
         Output.output_shown = True
 
     @staticmethod
@@ -97,7 +100,10 @@ class Output(object):  # {{{1
         """ Convenience function: output a given message as error message. """
 
         Output.clear_dot()
-        Output.print(("Yellow", msg), *arguments)
+        if msg != "":
+            Output.print(("Yellow", msg), *arguments, file=sys.stderr)
+        else:
+            Output.print(("Yellow", "".join(arguments)), file=sys.stderr)
         Output.output_shown = True
 
 OUT = Output.print
@@ -135,8 +141,9 @@ class ChecksumFiles(object):  # {{{1
                         filename, md5 = line[34:-1], line[:32]
                         self._entries[filename] = (md5, cspath)
                 except OSError as error:
-                    ERR(">>> '{0}' while reading checksum file '{1}'".format(
-                        error.args[1], cspath))
+                    ERR("'" + cspath + "'",
+                        msg="Could not read checksum file ({0}): ".format(
+                            error.args[1]))
 
     def __enter__(self):  # {{{2
         """ Make the class usable with the "with" statement - entry point. """
@@ -171,6 +178,10 @@ class ChecksumFiles(object):  # {{{1
                         ERR("\nWARNING! Interrupted while rewriting '{0}'\n"
                             "Data loss is possible.".format(cspath))
                         raise
+                    except OSError as error:
+                        ERR(cspath,
+                            msg="Could not write to checksum file ({0}): ". \
+                            format(error.args[1]))
                 else:
                     os.unlink(cspath)
 
@@ -183,8 +194,9 @@ class ChecksumFiles(object):  # {{{1
                 self._file = open(
                     path, "a" if args.update else "w")
         except OSError as error:
-            ERR(">>> '{0}' while opening checksum file '{1}'".format(
-                error.args[1], path))
+            ERR("'" + path + "'",
+                msg="Could not open checksum file for writing ({0}): ".format(
+                    error.args[1]))
         return self._file
 
     def entries(self):  # {{{2
@@ -236,8 +248,8 @@ class ChecksumFiles(object):  # {{{1
                     self._entries[filename] = (checksum, csfpath)
                     self._updated_csfiles.add(csfpath)
         except OSError as error:
-            ERR(">>> '{0}' while writing to checksum file '{1}'".format(
-                error.args[1], csfpath))
+            ERR(csfpath, msg="Could not write to checksum file ({0}): ".format(
+                error.args[1]))
 
     def check(self, filename, checksum):  # {{{2
         """ Check the given data against existing checksums.
@@ -572,10 +584,11 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
             # a missing file can only come from a checksum file entry, so no
             # check for args.(create|update) necessary
             if not os.path.isfile(fullpath):
-                WARN(">>> '{0}': does not exist: '{1}'".format(
+                WARN("'{0}' (listed in '{1}')".format(
+                    filename,
                     os.path.basename(old_sums[filename][1]) if args.quiet == 0
-                    else old_sums[filename][1],
-                    filename))
+                    else old_sums[filename][1]),
+                     msg=">> file does not exist: ")
                 State.files_missing += 1
                 if args.update:
                     checksums.remove_entry(filename)
@@ -585,10 +598,11 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
                 if not args.create:
                     State.not_in_md5 += 1
                     if not args.update:
-                        WARN(">>> '{0}' not in any checksum file.".format(
+                        WARN('{0}'.format(
                             # full directory path is already printed with
                             # args.quiet == 0, so don't repeat here
-                            filename if args.quiet == 0 else fullpath))
+                            filename if args.quiet == 0 else fullpath),
+                             msg=">> not in any checksum file: ")
                         # nothing more to do in read-only check mode
                         continue
             else:
@@ -605,7 +619,7 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
                 if match:
                     State.passes += 1
                 else:
-                    ERR(">>> checksum error: '{0}'".format(filename))
+                    ERR("'" + filename + "'", msg=">> checksum error: ")
                     State.fails += 1
 
 
@@ -721,7 +735,7 @@ def main():  # {{{1
         for location in args.locations:
             location = os.path.abspath(location)
             if not os.path.exists(location):
-                WARN(">>> '{0}' does not exist".format(location))
+                ERR("'" + location + "'", msg=">> does not exist: ")
             else:
                 total_size = gather_files(location, dirlist)
 
