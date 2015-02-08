@@ -79,6 +79,8 @@ class ChecksumFiles(object):  # {{{1
         self._entries = {}
         # the handle to the currently active checksum file
         self._file = None
+        # if the directory's checksum file was updated and is thus unsorted
+        self._updated = False
 
         # read entries in existing checksum files (but not if creating from
         # scratch, then we don't care what's already there)
@@ -98,8 +100,8 @@ class ChecksumFiles(object):  # {{{1
         try:
             if args.filename != "all" and self._file is None:
                 path = os.path.join(self._path, args.filename)
-                # TODO: "a" if args.update else "w"
-                self._file = open(path, "w")
+                self._file = open(
+                    path, "a" if args.update else "w")
         except OSError as error:
             ERR(">>> '{0}' while opening checksum file '{1}'".format(
                 error.args[1], path))
@@ -109,6 +111,12 @@ class ChecksumFiles(object):  # {{{1
         """ Getter to retrieve all listed checksums. """
 
         return self._entries
+
+    def remove_entry(self, filename):  # {{{2
+        """ If update mode detects a dead checksum entry, delete it here. """
+
+        self._entries.pop(filename)
+        self._updated = True
 
     def verify_hash(self, filename, checksum):  # {{{2
         """ Look for the given hash/file in existing checksum files. """
@@ -135,6 +143,9 @@ class ChecksumFiles(object):  # {{{1
                 print(
                     "{0} *{1}".format(checksum, filename),
                     file=self._get_checksum_file())
+                if args.update:
+                    self._entries[filename] = checksum
+                    self._updated = True
             except OSError as error:
                 ERR(">>> '{0}' while writing to checksum file '{1}'".format(
                     error.args[1], self))
@@ -152,6 +163,15 @@ class ChecksumFiles(object):  # {{{1
     def __del__(self):  # {{{2
         if self._file:
             self._file.close()
+        # Rewrite checksum file b/c it may not be sorted after update.
+        # But if there are no previous csfiles, then no need to rewrite them.
+        if self._updated and args.filename != "all" and self._csfiles:
+            with open(self._csfiles[0], "w") as csfile:
+                filenames = list(self._entries.keys())
+                filenames.sort()
+                for entry in filenames:
+                    print("{0} *{1}".format(self._entries[entry], entry),
+                          file=csfile)
 
 
 def parse_arguments():  # {{{1
@@ -174,6 +194,9 @@ def parse_arguments():  # {{{1
     group.add_argument(
         '-p', '--paths', action='store_true',
         help='only check paths, don\'t compare checksums (fast)')
+    group.add_argument(
+        '-u', '--update', action='store_true',
+        help='only hash yet unhashed files and remove dead hash entries')
     parser.add_argument(
         '-a', '--all', action='store_true',
         help='include hidden files and directories')
@@ -413,7 +436,7 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
 
     # progress output for this directory {{{2
     # want to verify checksums, but no checksum file available
-    if not args.create and not checksum_files:
+    if not args.create and not args.update and not checksum_files:
         if args.quiet < 3 and not args.no_missing_checksums:
             OUT("No checksum file in .{0}".format(
                 path[len(cwd):] if path.startswith(cwd) else path))
@@ -457,28 +480,32 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
         # get hash and check it agains existing hash from checksum file
 
         # a missing file can only come from a checksum file entry, so no check
-        # for not args.create necessary
+        # for args.(create|update) necessary
         if not os.path.isfile(fullpath):
             ERR(">>> '{0}': does not exist: '{1}'".format(
                 args.filename, filename))
             State.files_missing += 1
+            if args.update:
+                checksums.remove_entry(filename)
             continue
 
         if not filename in old_sums.keys():
             if not args.create:
-                ERR(">>> '{0}' not in any checksum file.".format(
-                    # directory is printed separately with args.quiet == 0
-                    filename if args.quiet == 0 else fullpath))
                 State.not_in_md5 += 1
-                continue
+                if not args.update:
+                    ERR(">>> '{0}' not in any checksum file.".format(
+                        # directory is printed separately with args.quiet == 0
+                        filename if args.quiet == 0 else fullpath))
+                    # nothing more to do in read-only check mode
+                    continue
         else:
             State.found_in_md5 += 1
-            if args.paths:
+            if args.paths or args.update:
                 continue
 
         checksum = do_hash(fullpath)
         State.hashed_files += 1
-        if args.create:
+        if args.update or args.create:
             checksums.write_hash(filename, checksum)
         else:
             match = checksums.verify_hash(filename, checksum)
@@ -548,7 +575,7 @@ def print_results(duration):  # {{{1
     if not args.paths:
         stats.append(("  hashed", State.hashed_files))
 
-        if not args.create:
+        if not args.create and not args.update:
             if not args.paths:
                 stats.append(("  checks passed", State.passes))
 
