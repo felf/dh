@@ -12,7 +12,7 @@ import sys
 import time
 
 __prog_name__ = 'dh.py'
-__prog_version__ = "1.4"
+__prog_version__ = "1.4.1"
 
 cwd = os.getcwd()
 
@@ -619,7 +619,12 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
                 if match:
                     State.passes += 1
                 else:
-                    ERR("'" + filename + "'", msg=">> checksum error: ")
+                    ERR("'{0}'{1}".format(
+                        filename if args.quiet == 0 else fullpath,
+                        " (listed in '{0}')".format(
+                            os.path.basename(old_sums[filename][1]))
+                        if args.filename == "all" else ""
+                    ), msg=">> checksum error: ")
                     State.fails += 1
 
 
