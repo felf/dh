@@ -767,7 +767,7 @@ def main():  # {{{1
         filecount = sum([len(directory[2]) for directory in dirlist])
 
         if not args.quiet:
-            if args.paths:
+            if args.paths or args.update:
                 OUT("Checking consistency between checksum files and "
                     "{0} {1} in {2} {3}".format(
                         filecount, plural(filecount, "file"),
