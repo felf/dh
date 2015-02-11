@@ -541,7 +541,7 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
     if not args.create and not args.update and not checksum_files:
         if args.quiet < 3 and not args.no_missing_checksums:
             WARN("'{0}'".format(
-                path[len(cwd):] if path.startswith(cwd) else path),
+                "." + path[len(cwd):] if path.startswith(cwd) else path),
                  msg="No checksum file: ")
         State.md5_missing += 1
         return 0
