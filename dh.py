@@ -778,6 +778,7 @@ def main():  # {{{1
                     len(dirlist), plural(len(dirlist), "directory"),
                     human_readable_size(total_size)))
 
+        starttime = time.time()
         for directory in dirlist:
             process_files(width, directory[0], directory[2], directory[3])
             State.dircount += 1
