@@ -38,7 +38,7 @@ class Output(object):  # {{{1
             'cyan':   '36',
             'white':  '37'
         }
-        return "\033[{0};{1}m".format(
+        return "\033[{};{}m".format(
             "0" if color[0].islower() else "1",
             colors.get(color.lower(), "0"))
 
@@ -142,7 +142,7 @@ class ChecksumFiles(object):  # {{{1
                         self._entries[filename] = (md5, cspath)
                 except OSError as error:
                     ERR("'" + cspath + "'",
-                        msg="Could not read checksum file ({0}): ".format(
+                        msg="Could not read checksum file ({}): ".format(
                             error.args[1]))
 
     def __enter__(self):  # {{{2
@@ -171,16 +171,16 @@ class ChecksumFiles(object):  # {{{1
                     try:
                         with open(cspath, "w") as csfile:
                             for entry in filenames:
-                                print("{0} *{1}".format(
+                                print("{} *{}".format(
                                     self._entries[entry][0], entry),
                                       file=csfile)
                     except KeyboardInterrupt:
-                        ERR("\nWARNING! Interrupted while rewriting '{0}'\n"
+                        ERR("\nWARNING! Interrupted while rewriting '{}'\n"
                             "Data loss is possible.".format(cspath))
                         raise
                     except OSError as error:
                         ERR(cspath,
-                            msg="Could not write to checksum file ({0}): ". \
+                            msg="Could not write to checksum file ({}): ". \
                             format(error.args[1]))
                 else:
                     os.unlink(cspath)
@@ -195,7 +195,7 @@ class ChecksumFiles(object):  # {{{1
                     path, "a" if args.update else "w")
         except OSError as error:
             ERR("'" + path + "'",
-                msg="Could not open checksum file for writing ({0}): ".format(
+                msg="Could not open checksum file for writing ({}): ".format(
                     error.args[1]))
         return self._file
 
@@ -235,20 +235,20 @@ class ChecksumFiles(object):  # {{{1
                 csfpath = self._path + filename + ".md5"
                 # TODO: ask for overwriting here
                 with open(csfpath, "a" if args.update else "w") as csfile:
-                    print("{0} *{1}".format(checksum, filename), file=csfile)
+                    print("{} *{}".format(checksum, filename), file=csfile)
                 if args.update:
                     # record new checksum item for use in self.__del__
                     self._entries[filename] = (checksum, csfpath)
             else:
                 print(
-                    "{0} *{1}".format(checksum, filename),
+                    "{} *{}".format(checksum, filename),
                     file=self._get_checksum_file())
                 csfpath = self._path + args.filename
                 if args.update and self._csfiles:
                     self._entries[filename] = (checksum, csfpath)
                     self._updated_csfiles.add(csfpath)
         except OSError as error:
-            ERR(csfpath, msg="Could not write to checksum file ({0}): ".format(
+            ERR(csfpath, msg="Could not write to checksum file ({}): ".format(
                 error.args[1]))
 
     def check(self, filename, checksum):  # {{{2
@@ -339,7 +339,7 @@ def parse_arguments():  # {{{1
 
     # clean-up of input
     if parsed_args.version:
-        print("{0} version {1}".format(__prog_name__, __prog_version__))
+        print("{} version {}".format(__prog_name__, __prog_version__))
         exit(0)
     if parsed_args.quiet > 3:
         parsed_args.quiet = 3
@@ -415,7 +415,7 @@ def do_hash(path):  # {{{1
     # thanks: http://stackoverflow.com/questions/1131220/get-md5-hash-of-big-\
     # files-in-python
     if args.verbose:
-        OUT("Hashing '{0}'".format(path))
+        OUT("Hashing '{}'".format(path))
 
     md5 = hashlib.md5()
     with open(path, "rb") as infile:
@@ -540,21 +540,21 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
     # want to verify checksums, but no checksum file available
     if not args.create and not args.update and not checksum_files:
         if args.quiet < 3 and not args.no_missing_checksums:
-            WARN("'{0}'".format(
+            WARN("'{}'".format(
                 "." + path[len(cwd):] if path.startswith(cwd) else path),
                  msg="No checksum file: ")
         State.md5_missing += 1
         return 0
 
     if State.skip_all and args.create and checksum_files:
-        OUT("Skipping overwrite in {0}".format(
+        OUT("Skipping overwrite in {}".format(
             "." + path[len(cwd):] if path.startswith(cwd) else path))
         State.skipped_overwrites += 1
         return 0
     else:
         # full output mode: print number of files and name of directory
         if args.quiet == 0:
-            OUT("Processing {0:>{1}} files in {2}".format(
+            OUT("Processing {:>{}} files in {}".format(
                 len(files), filenum_width,
                 "." + path[len(cwd):] if path.startswith(cwd) else path))
         # reduced output: only print a dot for each directory
@@ -585,7 +585,7 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
             # a missing file can only come from a checksum file entry, so no
             # check for args.(create|update) necessary
             if not os.path.isfile(fullpath):
-                WARN("'{0}' (listed in '{1}')".format(
+                WARN("'{}' (listed in '{}')".format(
                     filename,
                     os.path.basename(old_sums[filename][1]) if args.quiet == 0
                     else old_sums[filename][1]),
@@ -599,11 +599,11 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
                 if not args.create:
                     State.not_in_md5 += 1
                     if not args.update:
-                        WARN('{0}'.format(
+                        WARN(
                             # full directory path is already printed with
                             # args.quiet == 0, so don't repeat here
-                            filename if args.quiet == 0 else fullpath),
-                             msg=">> not in any checksum file: ")
+                            filename if args.quiet == 0 else fullpath,
+                            msg=">> not in any checksum file: ")
                         # nothing more to do in read-only check mode
                         continue
             else:
@@ -620,9 +620,9 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
                 if match:
                     State.passes += 1
                 else:
-                    ERR("'{0}'{1}".format(
+                    ERR("'{}'{}".format(
                         filename if args.quiet == 0 else fullpath,
-                        " (listed in '{0}')".format(
+                        " (listed in '{}')".format(
                             os.path.basename(old_sums[filename][1]))
                         if args.filename == "all" else ""
                     ), msg=">> checksum error: ")
@@ -636,7 +636,7 @@ def human_readable_size(value):  # {{{1
     while value >= 1024 and power <= 4:
         value = value / 1024
         power = power + 1
-    return "{0:0.1f} {1}".format(
+    return "{:0.1f} {}".format(
         value, ["B", "kiB", "MiB", "GiB", "TiB"][power])
 
 
@@ -707,15 +707,15 @@ def print_results(duration):  # {{{1
         if not args.paths:
             stats.append(("  hashed bytes",
                           0 if State.total_hashed_bytes == 0 else
-                          "{0} ({1})".format(
+                          "{} ({})".format(
                               State.total_hashed_bytes,
                               human_readable_size(State.total_hashed_bytes))))
 
         # --paths is fast, we don’t need time stats and total_hashed_bytes == 0
         if not args.paths:
-            value = "{0:3.1f} seconds".format(duration)
+            value = "{:3.1f} seconds".format(duration)
             if State.total_hashed_bytes != 0:
-                value += " ({0:0.1f} MiB/second)".format(
+                value += " ({:0.1f} MiB/second)".format(
                     State.total_hashed_bytes / 1048576 / duration \
                     if duration != 0 else 0)
             stats.append(("  time elapsed", value))
@@ -769,11 +769,11 @@ def main():  # {{{1
         if not args.quiet:
             if args.paths or args.update:
                 OUT("Checking consistency between checksum files and "
-                    "{0} {1} in {2} {3}".format(
+                    "{} {} in {} {}".format(
                         filecount, plural(filecount, "file"),
                         len(dirlist), plural(len(dirlist), "directory")))
             else:
-                OUT("Hashing {0} {1} in {2} {3} ({4})".format(
+                OUT("Hashing {} {} in {} {} ({})".format(
                     filecount, plural(filecount, "file"),
                     len(dirlist), plural(len(dirlist), "directory"),
                     human_readable_size(total_size)))
