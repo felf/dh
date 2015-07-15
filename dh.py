@@ -502,7 +502,7 @@ def gather_files(path, dirlist):  # {{{1
     return totalsize
 
 
-def ask_checksum_overwrite():
+def ask_checksum_overwrite():  # {{{1
     """ A checksum file would be overwritten. Ask how to proceed.
 
     Return True if proceed with the current directory. """
