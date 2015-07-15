@@ -12,7 +12,7 @@ import sys
 import time
 
 __prog_name__ = 'dh.py'
-__prog_version__ = "1.4.1"
+__prog_version__ = "1.4.2"
 
 cwd = os.getcwd()
 
@@ -131,6 +131,8 @@ class ChecksumFiles(object):  # {{{1
         self._file = None
         # checksum files that were modified during an update run
         self._updated_csfiles = set()
+        # whether the checksum file was modified (needed after an nterruption)
+        self._modified = False
 
         # read entries in existing checksum files (but not if creating from
         # scratch, then we don't care what's already there)
@@ -199,10 +201,21 @@ class ChecksumFiles(object):  # {{{1
                     error.args[1]))
         return self._file
 
+    def delete_checksum_files(self):  # {{{2
+        """ Delete the directory's checksum files. """
+
+        for csfile in self._csfiles:
+            os.remove(csfile)
+
     def entries(self):  # {{{2
         """ Getter to retrieve all listed checksums. """
 
         return self._entries
+
+    def is_modified(self):  # {{{2
+        """ Getter. """
+
+        return self._modified
 
     def remove_entry(self, filename):  # {{{2
         """ If update mode detects a dead checksum entry, delete it here. """
@@ -247,6 +260,7 @@ class ChecksumFiles(object):  # {{{1
                 if args.update and self._csfiles:
                     self._entries[filename] = (checksum, csfpath)
                     self._updated_csfiles.add(csfpath)
+                self._modified = True
         except OSError as error:
             ERR(csfpath, msg="Could not write to checksum file ({}): ".format(
                 error.args[1]))
@@ -532,6 +546,20 @@ def ask_checksum_overwrite():  # {{{1
         elif answer == "s":
             return False
 
+def ask_delete_incomplete_checksum():  # {{{1
+    """ Hashing a dir was interrupted, the file is incomplete. Ask what to do.
+
+    Return True if the file shall be deleted. """
+
+    # put a newline behind the dots
+    while True:
+        State.question_asked = True
+        answer = input(
+            ">>> Delete incomplete checksum file: (y)es, (n)o? ")
+        if answer.lower() in "yn":
+            break
+    return answer.lower() == "y"
+
 
 def process_files(filenum_width, path, files, checksum_files):  # {{{1
     """ Read checksum files and compare hashes in one directory. """
@@ -629,7 +657,10 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
                         ), msg=">> checksum error: ")
                         State.fails += 1
         except KeyboardInterrupt:
-            pass
+            if checksums.is_modified() and args.create:
+                print("")
+                if ask_delete_incomplete_checksum():
+                    checksums.delete_checksum_files()
 
 
 def human_readable_size(value):  # {{{1
