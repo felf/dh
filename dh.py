@@ -117,7 +117,7 @@ class ChecksumFiles(object):  # {{{1
     def __init__(self, path, checksum_files):  # {{{2
         # the directory
         self._path = path
-        # the directory
+        # the directory's checksum files to read or write
         self._csfiles = [os.path.join(path, cf) for cf in checksum_files]
         # whether each file has its own checksum file
         self._separate = args.filename == 'all'
