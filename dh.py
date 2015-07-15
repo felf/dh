@@ -424,7 +424,7 @@ def do_hash(path):  # {{{1
             if not data:
                 break
             md5.update(data)
-    State.total_hashed_bytes += os.path.getsize(path)
+            State.total_hashed_bytes += len(data)
     return md5.hexdigest()
 
 
