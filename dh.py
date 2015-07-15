@@ -569,64 +569,67 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
         return 0
 
     with ChecksumFiles(path, checksum_files) as checksums:
-        old_sums = checksums.entries()
-        if args.create:
-            files_to_hash = files
-        else:
-            files_to_hash = set(old_sums.keys())
-            files_to_hash.update(files)
-            files_to_hash = list(files_to_hash)
-            files_to_hash.sort()
-
-        for filename in files_to_hash:
-            fullpath = path + filename
-            # get hash and check it agains existing hash from checksum file
-
-            # a missing file can only come from a checksum file entry, so no
-            # check for args.(create|update) necessary
-            if not os.path.isfile(fullpath):
-                WARN("'{}' (listed in '{}')".format(
-                    filename,
-                    os.path.basename(old_sums[filename][1]) if args.quiet == 0
-                    else old_sums[filename][1]),
-                     msg=">> file does not exist: ")
-                State.files_missing += 1
-                if args.update:
-                    checksums.remove_entry(filename)
-                continue
-
-            if not filename in old_sums.keys():
-                if not args.create:
-                    State.not_in_md5 += 1
-                    if not args.update:
-                        WARN(
-                            # full directory path is already printed with
-                            # args.quiet == 0, so don't repeat here
-                            filename if args.quiet == 0 else fullpath,
-                            msg=">> not in any checksum file: ")
-                        # nothing more to do in read-only check mode
-                        continue
+        try:
+            old_sums = checksums.entries()
+            if args.create:
+                files_to_hash = files
             else:
-                State.found_in_md5 += 1
-                if args.paths or args.update:
+                files_to_hash = set(old_sums.keys())
+                files_to_hash.update(files)
+                files_to_hash = list(files_to_hash)
+                files_to_hash.sort()
+
+            for filename in files_to_hash:
+                fullpath = path + filename
+                # get hash and check it agains existing hash from checksum file
+
+                # a missing file can only come from a checksum file entry, so
+                # no check for args.(create|update) necessary
+                if not os.path.isfile(fullpath):
+                    WARN("'{}' (listed in '{}')".format(
+                        filename,
+                        os.path.basename(old_sums[filename][1]) \
+                            if args.quiet == 0 else old_sums[filename][1]),
+                         msg=">> file does not exist: ")
+                    State.files_missing += 1
+                    if args.update:
+                        checksums.remove_entry(filename)
                     continue
 
-            checksum = do_hash(fullpath)
-            State.hashed_files += 1
-            if args.update or args.create:
-                checksums.write_hash(filename, checksum)
-            else:
-                match = checksums.verify_hash(filename, checksum)
-                if match:
-                    State.passes += 1
+                if not filename in old_sums.keys():
+                    if not args.create:
+                        State.not_in_md5 += 1
+                        if not args.update:
+                            WARN(
+                                # full directory path is already printed with
+                                # args.quiet == 0, so don't repeat here
+                                filename if args.quiet == 0 else fullpath,
+                                msg=">> not in any checksum file: ")
+                            # nothing more to do in read-only check mode
+                            continue
                 else:
-                    ERR("'{}'{}".format(
-                        filename if args.quiet == 0 else fullpath,
-                        " (listed in '{}')".format(
-                            os.path.basename(old_sums[filename][1]))
-                        if args.filename == "all" else ""
-                    ), msg=">> checksum error: ")
-                    State.fails += 1
+                    State.found_in_md5 += 1
+                    if args.paths or args.update:
+                        continue
+
+                checksum = do_hash(fullpath)
+                State.hashed_files += 1
+                if args.update or args.create:
+                    checksums.write_hash(filename, checksum)
+                else:
+                    match = checksums.verify_hash(filename, checksum)
+                    if match:
+                        State.passes += 1
+                    else:
+                        ERR("'{}'{}".format(
+                            filename if args.quiet == 0 else fullpath,
+                            " (listed in '{}')".format(
+                                os.path.basename(old_sums[filename][1]))
+                            if args.filename == "all" else ""
+                        ), msg=">> checksum error: ")
+                        State.fails += 1
+        except KeyboardInterrupt:
+            pass
 
 
 def human_readable_size(value):  # {{{1
