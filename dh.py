@@ -323,7 +323,7 @@ def parse_arguments():  # {{{1
              'use any *.md5 file in checking mode and to create one checksum '
              'file for every input file)')
     group.add_argument(
-        '-o', '--overwrite', action='store_true',
+        '-O', '--overwrite', action='store_true',
         help='override checksum files without asking')
     group.add_argument(
         '--no-missing-checksums', action='store_true',
