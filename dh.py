@@ -20,8 +20,10 @@ cwd = os.getcwd()
 class Output(object):  # {{{1
     """ Handles printing to the screen and the state of the output. """
 
+    # variables {{{2
     # whether the last thing printed was a progress dot
     dot_last = False
+    # whether anything was printed yet
     output_shown = False
 
     @staticmethod
@@ -318,7 +320,8 @@ def parse_arguments():  # {{{1
         '-F', '--filename', action='store', default='Checksums.md5',
         metavar='name',
         help='name of checksum files (default: Checksums.md5, use \'all\' to '
-             'use any *.md5 file in checking mode)')
+             'use any *.md5 file in checking mode and to create one checksum '
+             'file for every input file)')
     group.add_argument(
         '-o', '--overwrite', action='store_true',
         help='override checksum files without asking')
