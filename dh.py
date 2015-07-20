@@ -661,6 +661,7 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
                 print("")
                 if ask_delete_incomplete_checksum():
                     checksums.delete_checksum_files()
+            raise
 
 
 def human_readable_size(value):  # {{{1
