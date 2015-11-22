@@ -548,6 +548,7 @@ def ask_checksum_overwrite():  # {{{1
             return False
         elif answer == "s":
             return False
+    return True
 
 def ask_delete_incomplete_checksum():  # {{{1
     """ Hashing a dir was interrupted, the file is incomplete. Ask what to do.
