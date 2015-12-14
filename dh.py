@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 """
 dh.py (dirhash) - create and verify checksums for directories recursively.
