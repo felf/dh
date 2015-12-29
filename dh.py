@@ -806,12 +806,12 @@ def main():  # {{{1
 
         if not args.quiet:
             if args.paths or args.update:
-                OUT("Checking consistency between checksum files and "
+                OUT("Checking checksum consistency for "
                     "{} {} in {} {}".format(
                         filecount, plural(filecount, "file"),
                         len(dirlist), plural(len(dirlist), "directory")))
             else:
-                OUT("Hashing {} {} in {} {} ({})".format(
+                OUT("Processing {} {} in {} {} ({})".format(
                     filecount, plural(filecount, "file"),
                     len(dirlist), plural(len(dirlist), "directory"),
                     human_readable_size(total_size)))
