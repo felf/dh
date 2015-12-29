@@ -14,7 +14,7 @@ import time
 __prog_name__ = 'dh.py'
 __prog_version__ = "1.4.2"
 
-cwd = os.getcwd()
+CWD = os.getcwd()
 
 
 class Output(object):  # {{{1
@@ -74,10 +74,10 @@ class Output(object):  # {{{1
 
         Output.clear_dot()
         for item in what:
-            if type(item) is str:
+            if isinstance(item, str):
                 print(item, end="", file=file)
             else:
-                if args.no_color:
+                if ARGS.no_color:
                     print(item[1], end="", file=file)
                 else:
                     print(Output.colorstring(item[0]) + item[1] + "\033[0;0m",
@@ -122,7 +122,7 @@ class ChecksumFiles(object):  # {{{1
         # the directory's checksum files to read or write
         self._csfiles = [os.path.join(path, cf) for cf in checksum_files]
         # whether each file has its own checksum file
-        self._separate = args.filename == 'all'
+        self._separate = ARGS.filename == 'all'
         # a dict of all checksums in the current checksum file (filename: hash)
         # key: filename, value: tuple(hash, checksum file)
         self._entries = {}
@@ -138,7 +138,7 @@ class ChecksumFiles(object):  # {{{1
 
         # read entries in existing checksum files (but not if creating from
         # scratch, then we don't care what's already there)
-        if not args.create:
+        if not ARGS.create:
             for cspath in self._csfiles:
                 try:
                     for line in open(cspath):
@@ -163,7 +163,7 @@ class ChecksumFiles(object):  # {{{1
         # But if there are no previous csfiles, there's nothing to sort.
         if self._csfiles:
             for cspath in self._updated_csfiles:
-                if args.filename == "all":
+                if ARGS.filename == "all":
                     # first get all entries of the required checksum file
                     filenames = [
                         entry for entry in self._entries
@@ -193,10 +193,10 @@ class ChecksumFiles(object):  # {{{1
         """ Encapsulate write access to checksum file. """
 
         try:
-            if args.filename != "all" and self._file is None:
-                path = os.path.join(self._path, args.filename)
+            if ARGS.filename != "all" and self._file is None:
+                path = os.path.join(self._path, ARGS.filename)
                 self._file = open(
-                    path, "a" if args.update else "w")
+                    path, "a" if ARGS.update else "w")
         except OSError as error:
             ERR("'" + path + "'",
                 msg="Could not open checksum file for writing ({}): ".format(
@@ -245,21 +245,21 @@ class ChecksumFiles(object):  # {{{1
         """ Add a new hash to the checksum file. """
 
         try:
-            if args.filename == 'all':
+            if ARGS.filename == 'all':
                 # path is guaranteed to end with "/" (2. stmt in gather_files)
                 csfpath = self._path + filename + ".md5"
                 # TODO: ask for overwriting here
-                with open(csfpath, "a" if args.update else "w") as csfile:
+                with open(csfpath, "a" if ARGS.update else "w") as csfile:
                     print("{} *{}".format(checksum, filename), file=csfile)
-                if args.update:
+                if ARGS.update:
                     # record new checksum item for use in self.__del__
                     self._entries[filename] = (checksum, csfpath)
             else:
                 print(
                     "{} *{}".format(checksum, filename),
                     file=self._get_checksum_file())
-                csfpath = self._path + args.filename
-                if args.update and self._csfiles:
+                csfpath = self._path + ARGS.filename
+                if ARGS.update and self._csfiles:
                     self._entries[filename] = (checksum, csfpath)
                     self._updated_csfiles.add(csfpath)
                 self._modified = True
@@ -365,11 +365,11 @@ def parse_arguments():  # {{{1
 
     # use current dir if no dir to process was given
     if not parsed_args.locations:
-        parsed_args.locations.append(cwd)
+        parsed_args.locations.append(CWD)
 
     return parsed_args
 
-args = parse_arguments()
+ARGS = parse_arguments()
 
 
 class State(object):  # {{{1
@@ -414,9 +414,9 @@ class State(object):  # {{{1
 
         State.skip = arguments.skip
         State.limit = arguments.number
-        State.overwrite_all = args.overwrite
+        State.overwrite_all = arguments.overwrite
 
-State.set_from_arguments(args)
+State.set_from_arguments(ARGS)
 
 
 class RecursionException(Exception):  # {{{1
@@ -431,7 +431,7 @@ def do_hash(path):  # {{{1
 
     # thanks: http://stackoverflow.com/questions/1131220/get-md5-hash-of-big-\
     # files-in-python
-    if args.verbose:
+    if ARGS.verbose:
         OUT("Hashing '{}'".format(path))
 
     md5 = hashlib.md5()
@@ -469,12 +469,12 @@ def gather_files(path, dirlist):  # {{{1
     totalsize = 0
 
     # get and categorise directory content {{{2
-    content = [item for item in os.listdir(path) if item[0] != "." or args.all]
+    content = [item for item in os.listdir(path) if item[0] != "." or ARGS.all]
     dirs = []
     files = []
     for item in content:
         fullpath = path + os.path.sep + item
-        if os.path.islink(fullpath) and not args.follow_links:
+        if os.path.islink(fullpath) and not ARGS.follow_links:
             continue
         if os.path.isdir(fullpath):
             dirs.append(item)
@@ -482,18 +482,18 @@ def gather_files(path, dirlist):  # {{{1
             files.append(item)
 
     # look for requested (or existing) checksum files {{{2
-    if args.filename == "all":
+    if ARGS.filename == "all":
         md5files = [f for f in files if f.lower().endswith(".md5")]
         md5files.sort()
     else:
-        md5files = [args.filename] if args.filename in files else []
+        md5files = [ARGS.filename] if ARGS.filename in files else []
     # and remove them from the files to be checked
     for md5file in md5files:
         if md5file in files:
             files.remove(md5file)
 
     # gather relevant list of files in this directory {{{2
-    if files and (not dirs or args.force):
+    if files and (not dirs or ARGS.force):
         # only process if this dir is not excluded through constraint arguments
         if State.skip == 0 and State.limit != 0:
             files.sort()
@@ -569,32 +569,32 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
 
     # progress output for this directory {{{2
     # want to verify checksums, but no checksum file available
-    if not args.create and not args.update and not checksum_files:
-        if args.quiet < 3 and not args.no_missing_checksums:
+    if not ARGS.create and not ARGS.update and not checksum_files:
+        if ARGS.quiet < 3 and not ARGS.no_missing_checksums:
             WARN("'{}'".format(
-                "." + path[len(cwd):] if path.startswith(cwd) else path),
+                "." + path[len(CWD):] if path.startswith(CWD) else path),
                  msg="No checksum file: ")
         State.md5_missing += 1
         return 0
 
-    if State.skip_all and args.create and checksum_files:
+    if State.skip_all and ARGS.create and checksum_files:
         OUT("Skipping overwrite in {}".format(
-            "." + path[len(cwd):] if path.startswith(cwd) else path))
+            "." + path[len(CWD):] if path.startswith(CWD) else path))
         State.skipped_overwrites += 1
         return 0
     else:
         # full output mode: print number of files and name of directory
-        if args.quiet == 0:
+        if ARGS.quiet == 0:
             OUT("Processing {:>{}} files in {}".format(
                 len(files), filenum_width,
-                "." + path[len(cwd):] if path.startswith(cwd) else path))
+                "." + path[len(CWD):] if path.startswith(CWD) else path))
         # reduced output: only print a dot for each directory
-        elif args.quiet == 1:
+        elif ARGS.quiet == 1:
             Output.dot()
 
     # the checksum file will be overwritten -> ask how to proceed {{{2
     # TODO: -F all (right now, it asks only for the dir's first file)
-    if checksum_files and args.create and os.path.isfile(
+    if checksum_files and ARGS.create and os.path.isfile(
             path + checksum_files[0]) and not ask_checksum_overwrite():
         State.skipped_overwrites += 1
         return 0
@@ -602,7 +602,7 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
     with ChecksumFiles(path, checksum_files) as checksums:
         try:
             old_sums = checksums.entries()
-            if args.create:
+            if ARGS.create:
                 files_to_hash = files
             else:
                 files_to_hash = set(old_sums.keys())
@@ -615,37 +615,37 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
                 # get hash and check it agains existing hash from checksum file
 
                 # a missing file can only come from a checksum file entry, so
-                # no check for args.(create|update) necessary
+                # no check for ARGS.(create|update) necessary
                 if not os.path.isfile(fullpath):
                     WARN("'{}' (listed in '{}')".format(
                         filename,
                         os.path.basename(old_sums[filename][1]) \
-                            if args.quiet == 0 else old_sums[filename][1]),
+                            if ARGS.quiet == 0 else old_sums[filename][1]),
                          msg=">> file does not exist: ")
                     State.files_missing += 1
-                    if args.update:
+                    if ARGS.update:
                         checksums.remove_entry(filename)
                     continue
 
                 if not filename in old_sums.keys():
-                    if not args.create:
+                    if not ARGS.create:
                         State.not_in_md5 += 1
-                        if not args.update:
+                        if not ARGS.update:
                             WARN(
                                 # full directory path is already printed with
-                                # args.quiet == 0, so don't repeat here
-                                filename if args.quiet == 0 else fullpath,
+                                # ARGS.quiet == 0, so don't repeat here
+                                filename if ARGS.quiet == 0 else fullpath,
                                 msg=">> not in any checksum file: ")
                             # nothing more to do in read-only check mode
                             continue
                 else:
                     State.found_in_md5 += 1
-                    if args.paths or args.update:
+                    if ARGS.paths or ARGS.update:
                         continue
 
                 checksum = do_hash(fullpath)
                 State.hashed_files += 1
-                if args.update or args.create:
+                if ARGS.update or ARGS.create:
                     checksums.write_hash(filename, checksum)
                 else:
                     match = checksums.verify_hash(filename, checksum)
@@ -653,14 +653,14 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
                         State.passes += 1
                     else:
                         ERR("'{}'{}".format(
-                            filename if args.quiet == 0 else fullpath,
+                            filename if ARGS.quiet == 0 else fullpath,
                             " (listed in '{}')".format(
                                 os.path.basename(old_sums[filename][1]))
-                            if args.filename == "all" else ""
+                            if ARGS.filename == "all" else ""
                         ), msg=">> checksum error: ")
                         State.fails += 1
         except KeyboardInterrupt:
-            if checksums.is_modified() and args.create:
+            if checksums.is_modified() and ARGS.create:
                 print("")
                 if ask_delete_incomplete_checksum():
                     checksums.delete_checksum_files()
@@ -702,8 +702,8 @@ def print_results(duration):  # {{{1
 
     stats.append(("  processed", State.dircount))
 
-    if args.skip > 0:
-        stats.append(("  after skipping", args.skip))
+    if ARGS.skip > 0:
+        stats.append(("  after skipping", ARGS.skip))
 
     if State.skipped_overwrites > 0:
         stats.append(("  skipped for overwriting", State.skipped_overwrites))
@@ -713,7 +713,7 @@ def print_results(duration):  # {{{1
 
     stats.append(("FILES:", ""))
 
-    if not args.create:
+    if not ARGS.create:
         stats.append(("  listed in checksum file", State.found_in_md5))
 
         # number of files that had an entry in an existing md5 file
@@ -723,11 +723,11 @@ def print_results(duration):  # {{{1
         if State.files_missing > 0:
             stats.append(("  listed, but not found", State.files_missing))
 
-    if not args.paths:
+    if not ARGS.paths:
         stats.append(("  hashed", State.hashed_files))
 
-        if not args.create and not args.update:
-            if not args.paths:
+        if not ARGS.create and not ARGS.update:
+            if not ARGS.paths:
                 stat = ["  checks passed", State.passes]
                 if State.passes != 0:
                     stat.append("Green" if State.passes == State.hashed_files
@@ -739,10 +739,10 @@ def print_results(duration):  # {{{1
                     stat.append("Red")
                 stats.append(stat)
 
-    if not args.paths:
+    if not ARGS.paths:
         stats.append(("VOLUME:", ""))
 
-        if not args.paths:
+        if not ARGS.paths:
             stats.append(("  hashed bytes",
                           0 if State.total_hashed_bytes == 0 else
                           "{} ({})".format(
@@ -750,7 +750,7 @@ def print_results(duration):  # {{{1
                               human_readable_size(State.total_hashed_bytes))))
 
         # --paths is fast, we don’t need time stats and total_hashed_bytes == 0
-        if not args.paths:
+        if not ARGS.paths:
             value = "{:3.1f} seconds".format(duration)
             if State.total_hashed_bytes != 0:
                 value += " ({:0.1f} MiB/second)".format(
@@ -786,9 +786,9 @@ def main():  # {{{1
     try:
         dirlist = []
         starttime = time.time()
-        if not args.quiet:
+        if not ARGS.quiet:
             OUT("Gathering list of files...")
-        for location in args.locations:
+        for location in ARGS.locations:
             location = os.path.abspath(location)
             if not os.path.exists(location):
                 ERR("'" + location + "'", msg=">> does not exist: ")
@@ -804,8 +804,8 @@ def main():  # {{{1
         width = math.floor(math.log10(width) + 1)
         filecount = sum([len(directory[2]) for directory in dirlist])
 
-        if not args.quiet:
-            if args.paths or args.update:
+        if not ARGS.quiet:
+            if ARGS.paths or ARGS.update:
                 OUT("Checking checksum consistency for "
                     "{} {} in {} {}".format(
                         filecount, plural(filecount, "file"),
@@ -821,7 +821,7 @@ def main():  # {{{1
             process_files(width, directory[0], directory[2], directory[3])
             State.dircount += 1
     except KeyboardInterrupt:
-        if args.create:
+        if ARGS.create:
             WARN("\nHashing aborted.")
         else:
             WARN("\nCheck aborted.")
