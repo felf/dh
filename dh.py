@@ -22,7 +22,7 @@ class Output(object):  # {{{1
 
     # variables {{{2
     # whether the last thing printed was a progress dot
-    dot_last = False
+    progress_last = False
     # whether anything was printed yet
     output_shown = False
 
@@ -45,12 +45,12 @@ class Output(object):  # {{{1
             colors.get(color.lower(), "0"))
 
     @staticmethod
-    def clear_dot():  # {{{2
-        """ Print a newline if the last thing printed was a progress dot. """
+    def clear_line():  # {{{2
+        """ Print a newline if the last thing printed was a progress msg. """
 
-        if Output.dot_last:
+        if Output.progress_last:
             print("")
-            Output.dot_last = False
+            Output.progress_last = False
 
     @staticmethod
     def print_separator(width):
@@ -65,14 +65,14 @@ class Output(object):  # {{{1
 
         print(".", end="")
         sys.stdout.flush()
-        Output.dot_last = True
+        Output.progress_last = True
         Output.output_shown = True
 
     @staticmethod
     def print(*what, file=sys.stdout):  # {{{2
         """ Output the given message. """
 
-        Output.clear_dot()
+        Output.clear_line()
         for item in what:
             if isinstance(item, str):
                 print(item, end="", file=file)
@@ -90,7 +90,7 @@ class Output(object):  # {{{1
     def error(*arguments, msg=""):  # {{{2
         """ Output a given message as error message. """
 
-        Output.clear_dot()
+        Output.clear_line()
         if msg != "":
             Output.print(("Red", msg), *arguments, file=sys.stderr)
         else:
@@ -101,7 +101,7 @@ class Output(object):  # {{{1
     def warn(*arguments, msg=""):  # {{{2
         """ Convenience function: output a given message as error message. """
 
-        Output.clear_dot()
+        Output.clear_line()
         if msg != "":
             Output.print(("Yellow", msg), *arguments, file=sys.stderr)
         else:
@@ -528,7 +528,7 @@ def ask_checksum_overwrite():  # {{{1
         return False
     if not State.overwrite_all:
         # put a newline behind the dots
-        Output.clear_dot()
+        Output.clear_line()
         while True:
             State.question_asked = True
             answer = input(
@@ -832,7 +832,7 @@ def main():  # {{{1
         endtime = time.time()
         duration = endtime - starttime
 
-    Output.clear_dot()
+    Output.clear_line()
     print_results(duration)
 
     if any([
