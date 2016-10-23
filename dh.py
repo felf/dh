@@ -45,6 +45,13 @@ class Output(object):  # {{{1
             colors.get(color.lower(), "0"))
 
     @staticmethod
+    def ask(msg):  # {{{2
+        """ Show the user a question and get input. """
+
+        Output.clear_line()
+        return input(msg)
+
+    @staticmethod
     def clear_line():  # {{{2
         """ Print a newline if the last thing printed was a progress msg. """
 
@@ -531,7 +538,7 @@ def ask_checksum_overwrite():  # {{{1
         Output.clear_line()
         while True:
             State.question_asked = True
-            answer = input(
+            answer = Output.ask(
                 ">>> Checksum file exists: (O)verwrite, "
                 "o(v)erwrite all, (s)kip, skip al(l), (a)bort? ")
             if answer.lower() in "ovsla":
@@ -558,7 +565,7 @@ def ask_delete_incomplete_checksum():  # {{{1
     # put a newline behind the dots
     while True:
         State.question_asked = True
-        answer = input(
+        answer = Output.ask(
             ">>> Delete incomplete checksum file: (y)es, (n)o? ")
         if answer.lower() in "yn":
             break
