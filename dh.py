@@ -60,7 +60,7 @@ class Output(object):  # {{{1
             Output.progress_last = False
 
     @staticmethod
-    def print_separator(width):
+    def print_separator(width):  # {{{2
         """ Print the stats table header only if other output came before. """
 
         if Output.output_shown:
@@ -416,7 +416,7 @@ class State(object):  # {{{1
     question_asked = False
 
     @staticmethod
-    def set_from_arguments(arguments):
+    def set_from_arguments(arguments):  # {{{2
         """ Set relevant statistics according to main arguments. """
 
         State.skip = arguments.skip
