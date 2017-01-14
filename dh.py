@@ -18,7 +18,7 @@ CWD = os.getcwd()
 
 
 class Output(object):  # {{{1
-    """ Handles printing to the screen and the state of the output. """
+    """ Handle printing to the screen and the state of the output. """
 
     # variables {{{2
     # whether the last thing printed was a progress dot
@@ -28,7 +28,7 @@ class Output(object):  # {{{1
 
     @staticmethod
     def colorstring(color):  # {{{2
-        """ Create the terminal escape sequence for the given colour. """
+        """ Return the terminal escape sequence for the given colour. """
 
         colors = {
             'black':  '30',
@@ -46,7 +46,7 @@ class Output(object):  # {{{1
 
     @staticmethod
     def ask(msg):  # {{{2
-        """ Show the user a question and get input. """
+        """ Show the user a question, get input and return it. """
 
         Output.clear_line()
         return input(msg)
@@ -61,7 +61,7 @@ class Output(object):  # {{{1
 
     @staticmethod
     def print_separator(width):  # {{{2
-        """ Print the stats table header only if other output came before. """
+        """ Print the stats table header (only if other output came before). """
 
         if Output.output_shown:
             print("-" * width)
@@ -95,7 +95,7 @@ class Output(object):  # {{{1
 
     @staticmethod
     def error(*arguments, msg=""):  # {{{2
-        """ Output a given message as error message. """
+        """ Convenience function: output a given message as error message. """
 
         Output.clear_line()
         if msg != "":
@@ -106,7 +106,7 @@ class Output(object):  # {{{1
 
     @staticmethod
     def warn(*arguments, msg=""):  # {{{2
-        """ Convenience function: output a given message as error message. """
+        """ Convenience function: output a given message as warning message. """
 
         Output.clear_line()
         if msg != "":
@@ -459,7 +459,7 @@ def gather_files(path, dirlist):  # {{{1
     paths end with a path separator. The 'size' for directories is the summed
     size of all the files to be hashed in that dir. Directories that don't
     contain relevant files will not be listed, even if any of their
-    subdirectories actually do contain some.
+    subdirectories actually do contain such files.
 
     The resulting list looks like this:
     [
@@ -529,7 +529,7 @@ def gather_files(path, dirlist):  # {{{1
 def ask_checksum_overwrite():  # {{{1
     """ A checksum file would be overwritten. Ask how to proceed.
 
-    Return True if proceed with the current directory. """
+    Return True if to proceed with the current directory. """
 
     if State.skip_all:
         return False
