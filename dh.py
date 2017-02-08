@@ -79,7 +79,6 @@ class Output(object):  # {{{1
     def print(*what, file=sys.stdout):  # {{{2
         """ Output the given message. """
 
-        Output.clear_line()
         for item in what:
             if isinstance(item, str):
                 print(item, end="", file=file)
@@ -94,28 +93,39 @@ class Output(object):  # {{{1
         Output.output_shown = True
 
     @staticmethod
+    def print_line(*what, file=sys.stdout):  # {{{2
+        """ Output the given message onto a new line. """
+
+        if Output.progress_with_newline:
+            Output.clear_line()
+        else:
+            Output.erase_progress_text()
+        Output.print(*what, file=file)
+        Output.progress_last = False
+        if Output.last_progress_text:
+            Output.reprint_progress()
+
+    @staticmethod
     def error(*arguments, msg=""):  # {{{2
         """ Convenience function: output a given message as error message. """
 
-        Output.clear_line()
         if msg != "":
-            Output.print(("Red", msg), *arguments, file=sys.stderr)
+            Output.print_line(("Red", msg), *arguments, file=sys.stderr)
         else:
-            Output.print(("Red", "".join(arguments)), file=sys.stderr)
+            Output.print_line(("Red", "".join(arguments)), file=sys.stderr)
         Output.output_shown = True
 
     @staticmethod
     def warn(*arguments, msg=""):  # {{{2
         """ Convenience function: output a given message as warning message. """
 
-        Output.clear_line()
         if msg != "":
-            Output.print(("Yellow", msg), *arguments, file=sys.stderr)
+            Output.print_line(("Yellow", msg), *arguments, file=sys.stderr)
         else:
-            Output.print(("Yellow", "".join(arguments)), file=sys.stderr)
+            Output.print_line(("Yellow", "".join(arguments)), file=sys.stderr)
         Output.output_shown = True
 
-OUT = Output.print
+OUT = Output.print_line
 ERR = Output.error
 WARN = Output.warn
 
