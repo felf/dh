@@ -416,6 +416,9 @@ def parse_arguments():  # {{{1
     if parsed_args.version:
         print("{} version {}".format(__prog_name__, __prog_version__))
         exit(0)
+    if parsed_args.quiet > 0 and parsed_args.verbose:
+        print("error: quiet and verbose options cannot be mixed.")
+        sys.exit(1)
     if parsed_args.quiet > 3:
         parsed_args.quiet = 3
     if parsed_args.filename != "all":
