@@ -150,6 +150,8 @@ class Output(object):  # {{{1
     def error(*arguments, msg=""):  # {{{2
         """ Convenience function: output a given message as error message. """
 
+        Output.clear_line()
+        Output.clear_progress_text()
         if msg != "":
             Output.print_line(("Red", msg), *arguments, file=sys.stderr)
         else:
@@ -160,6 +162,8 @@ class Output(object):  # {{{1
     def warn(*arguments, msg=""):  # {{{2
         """ Convenience function: output a given message as warning message. """
 
+        Output.clear_line()
+        Output.clear_progress_text()
         if msg != "":
             Output.print_line(("Yellow", msg), *arguments, file=sys.stderr)
         else:
