@@ -839,8 +839,11 @@ def print_results(duration):  # {{{1
 
     # print results
     for stat in stats:
-        print("{label:{labelwidth}}: ".format(
-            label=stat[0], labelwidth=labelwidth), end="")
+        print("{label:{labelwidth}}{colon} ".format(
+            label=stat[0],
+            labelwidth=labelwidth,
+            colon=":" if stat[1] != "" else "",
+            ), end="")
         value = "{value:>{valuewidth}}".format(
             value=stat[1], valuewidth=valuewidth)
         if len(stat) == 3:
