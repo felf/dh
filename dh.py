@@ -25,6 +25,10 @@ class Output(object):  # {{{1
     progress_last = False
     # whether anything was printed yet
     output_shown = False
+    # whether each progress message shall appear on an own line
+    progress_with_newline = False
+    # the text last shown as progress message
+    last_progress_text = ""
 
     @staticmethod
     def colorstring(color):  # {{{2
@@ -60,20 +64,28 @@ class Output(object):  # {{{1
             Output.progress_last = False
 
     @staticmethod
+    def clear_progress_text():  # {{{2
+        """ Reset the last progress text to empty. """
+
+        Output.last_progress_text = ""
+
+    @staticmethod
+    def erase_progress_text():  # {{{2
+        """ Overwrite last progress message with spaces. """
+
+        print(" " * len(Output.last_progress_text), end="\r")
+
+    @staticmethod
     def print_separator(width):  # {{{2
         """ Print the stats table header (only if other output came before). """
 
+        if Output.progress_with_newline:
+            if Output.output_shown:
+                Output.clear_line()
+        else:
+            Output.erase_progress_text()
         if Output.output_shown:
             print("-" * width)
-
-    @staticmethod
-    def dot():  # {{{2
-        """ Output a progress dot. """
-
-        print(".", end="")
-        sys.stdout.flush()
-        Output.progress_last = True
-        Output.output_shown = True
 
     @staticmethod
     def print(*what, file=sys.stdout):  # {{{2
@@ -104,6 +116,35 @@ class Output(object):  # {{{1
         Output.progress_last = False
         if Output.last_progress_text:
             Output.reprint_progress()
+
+    @staticmethod
+    def progress(what, number, total, msg=""):  # {{{2
+        """ Print a progress indicator with two numbers and a possible msg. """
+
+        if Output.progress_with_newline and Output.progress_last:
+            print()
+        else:
+            Output.erase_progress_text()
+        Output.last_progress_text = "({} {} of {}) {}".format(
+            what, number, total, msg)
+        terminal_size = os.get_terminal_size()
+        print("{text:{length}}\r".format(
+            text=Output.last_progress_text,
+            length=terminal_size.columns - 1), end="")
+        Output.progress_last = True
+        Output.output_shown = True
+        sys.stdout.flush()
+
+    @staticmethod
+    def reprint_progress():  # {{{2
+        """ Normal progress output was interrupted by a warning or error
+        message. This restores the last progress message. """
+
+        if Output.last_progress_text:
+            terminal_size = os.get_terminal_size()
+            print("{text:{length}}\r".format(
+                text=Output.last_progress_text,
+                length=terminal_size.columns - 1), end="")
 
     @staticmethod
     def error(*arguments, msg=""):  # {{{2
@@ -357,7 +398,7 @@ def parse_arguments():  # {{{1
     group = parser.add_argument_group(title="output options")
     group.add_argument(
         '-q', '--quiet', action='count', default=0,
-        help='less progress output (-q: print dots instead of paths, -qq: '
+        help='less progress output (-q: only print directory number, -qq: '
              'print no progress at all, -qqq: suppress warnings about missing '
              'checksum files)')
     group.add_argument(
@@ -384,6 +425,7 @@ def parse_arguments():  # {{{1
     if not parsed_args.locations:
         parsed_args.locations.append(CWD)
 
+    Output.progress_with_newline = parsed_args.verbose
     return parsed_args
 
 ARGS = parse_arguments()
@@ -448,8 +490,10 @@ def do_hash(path):  # {{{1
 
     # thanks: http://stackoverflow.com/questions/1131220/get-md5-hash-of-big-\
     # files-in-python
+    global filenum, filecount
+    filenum += 1
     if ARGS.verbose:
-        OUT("Hashing '{}'".format(path))
+        Output.progress("file", filenum, filecount, path)
 
     md5 = hashlib.md5()
     with open(path, "rb") as infile:
@@ -544,8 +588,6 @@ def ask_checksum_overwrite():  # {{{1
     if State.skip_all:
         return False
     if not State.overwrite_all:
-        # put a newline behind the dots
-        Output.clear_line()
         while True:
             State.question_asked = True
             answer = Output.ask(
@@ -585,6 +627,8 @@ def ask_delete_incomplete_checksum():  # {{{1
 def process_files(filenum_width, path, files, checksum_files):  # {{{1
     """ Read checksum files and compare hashes in one directory. """
 
+    global dirnum, filenum
+    dirnum += 1
     # progress output for this directory {{{2
     # want to verify checksums, but no checksum file available
     if not ARGS.create and not ARGS.update and not checksum_files:
@@ -593,28 +637,33 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
                 "." + path[len(CWD):] if path.startswith(CWD) else path),
                  msg="No checksum file: ")
         State.md5_missing += 1
+        filenum += len(files)
         return 0
 
     if State.skip_all and ARGS.create and checksum_files:
-        OUT("Skipping overwrite in {}".format(
-            "." + path[len(CWD):] if path.startswith(CWD) else path))
+        Output.progress(
+            "dir", dirnum, dircount, "Skipping overwrite in {}".format(
+                "." + path[len(CWD):] if path.startswith(CWD) else path))
         State.skipped_overwrites += 1
+        filenum += len(files)
         return 0
     else:
         # full output mode: print number of files and name of directory
         if ARGS.quiet == 0:
-            OUT("Processing {:>{}} files in {}".format(
-                len(files), filenum_width,
-                "." + path[len(CWD):] if path.startswith(CWD) else path))
+            Output.progress(
+                "dir", dirnum, dircount, "Processing {:>{}} files in {}".format(
+                    len(files), filenum_width,
+                    "." + path[len(CWD):] if path.startswith(CWD) else path))
         # reduced output: only print a dot for each directory
         elif ARGS.quiet == 1:
-            Output.dot()
+            Output.progress("dir", dirnum, dircount)
 
     # the checksum file will be overwritten -> ask how to proceed {{{2
     # TODO: -F all (right now, it asks only for the dir's first file)
     if checksum_files and ARGS.create and os.path.isfile(
             path + checksum_files[0]) and not ask_checksum_overwrite():
         State.skipped_overwrites += 1
+        filenum += len(files)
         return 0
 
     with ChecksumFiles(path, checksum_files) as checksums:
@@ -817,21 +866,25 @@ def main():  # {{{1
             WARN("Nothing worth checking found.")
             exit(0)
 
+        global dirnum, dircount, filenum, filecount
+        dircount = len(dirlist)
+        filecount = sum([len(directory[2]) for directory in dirlist])
+        dirnum = 0
+        filenum = 0
         # find out how many characters are needed for the file count column
         width = max([len(directory[2]) for directory in dirlist])
         width = math.floor(math.log10(width) + 1)
-        filecount = sum([len(directory[2]) for directory in dirlist])
 
         if not ARGS.quiet:
             if ARGS.paths or ARGS.update:
                 OUT("Checking checksum consistency for "
                     "{} {} in {} {}".format(
                         filecount, plural(filecount, "file"),
-                        len(dirlist), plural(len(dirlist), "directory")))
+                        dircount, plural(dircount, "directory")))
             else:
                 OUT("Processing {} {} in {} {} ({})".format(
                     filecount, plural(filecount, "file"),
-                    len(dirlist), plural(len(dirlist), "directory"),
+                    dircount, plural(dircount, "directory"),
                     human_readable_size(total_size)))
 
         starttime = time.time()
@@ -839,6 +892,7 @@ def main():  # {{{1
             process_files(width, directory[0], directory[2], directory[3])
             State.dircount += 1
     except KeyboardInterrupt:
+        Output.clear_progress_text()
         if ARGS.create:
             WARN("\nHashing aborted.")
         else:
@@ -849,7 +903,6 @@ def main():  # {{{1
         endtime = time.time()
         duration = endtime - starttime
 
-    Output.clear_line()
     print_results(duration)
 
     if any([
