@@ -200,6 +200,8 @@ class ChecksumFiles(object):  # {{{1
             for cspath in self._csfiles:
                 try:
                     for line in open(cspath):
+                        if not line.strip():
+                            continue
                         filename, md5 = line[34:-1], line[:32]
                         self._entries[filename] = (md5, cspath)
                 except OSError as error:
