@@ -195,7 +195,7 @@ class ChecksumFiles(object):  # {{{1
         self._file = None
         # checksum files that were modified during an update run
         self._updated_csfiles = set()
-        # whether the checksum file was modified (needed after an nterruption)
+        # whether the checksum file was modified (needed after an interruption)
         self._modified = False
 
         # read entries in existing checksum files (but not if creating from
@@ -253,7 +253,7 @@ class ChecksumFiles(object):  # {{{1
                 else:
                     os.unlink(cspath)
 
-    def _get_checksum_file(self):  # {{{2
+    def _get_checksum_file_handle(self):  # {{{2
         """ Encapsulate write access to checksum file. """
 
         try:
@@ -321,7 +321,7 @@ class ChecksumFiles(object):  # {{{1
             else:
                 print(
                     "{} *{}".format(checksum, filename),
-                    file=self._get_checksum_file())
+                    file=self._get_checksum_file_handle())
                 csfpath = self._path + ARGS.filename
                 if ARGS.update and self._csfiles:
                     self._entries[filename] = (checksum, csfpath)
