@@ -12,7 +12,7 @@ import sys
 import time
 
 __prog_name__ = 'dh.py'
-__prog_version__ = "1.4.2"
+__prog_version__ = "1.4.3"
 
 CWD = os.getcwd()
 
@@ -181,8 +181,12 @@ class ChecksumFiles(object):  # {{{1
     def __init__(self, path, checksum_files):  # {{{2
         # the directory
         self._path = path
-        # the directory's checksum files to read or write
-        self._csfiles = [os.path.join(path, cf) for cf in checksum_files]
+        # a dict of all the directory's checksum files to read or write
+        # key: full path to file, value: the file's current mtime
+        self._csfiles = {
+            os.path.join(path, cf): os.path.getmtime(os.path.join(path, cf))
+            for cf in checksum_files
+        }
         # whether each file has its own checksum file
         self._separate = ARGS.filename == 'all'
         # a dict of all checksums in the current checksum file (filename: hash)
@@ -277,6 +281,13 @@ class ChecksumFiles(object):  # {{{1
         """ Getter to retrieve all listed checksums. """
 
         return self._entries
+
+    def file_is_not_newer(self, filename):  # {{{2
+        """ Compare given file's mtime with mtime of its checksum file.
+        Return true if file is not newer than checksum file. """
+
+        return os.path.getmtime(filename) < self._csfiles[
+            self._entries[filename][1]]
 
     def is_modified(self):  # {{{2
         """ Getter. """
@@ -716,7 +727,9 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
                             continue
                 else:
                     State.found_in_md5 += 1
-                    if ARGS.paths or ARGS.update:
+                    if ARGS.paths:
+                        continue
+                    if ARGS.update and checksums.file_is_not_newer(filename):
                         continue
 
                 checksum = do_hash(fullpath)
