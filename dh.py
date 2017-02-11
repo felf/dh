@@ -287,7 +287,7 @@ class ChecksumFiles(object):  # {{{1
         Return true if file is not newer than checksum file. """
 
         return os.path.getmtime(filename) < self._csfiles[
-            self._entries[filename][1]]
+            self._entries[os.path.basename(filename)][1]]
 
     def is_modified(self):  # {{{2
         """ Getter. """
@@ -731,7 +731,7 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
                     State.found_in_md5 += 1
                     if ARGS.paths:
                         continue
-                    if ARGS.update and checksums.file_is_not_newer(filename):
+                    if ARGS.update and checksums.file_is_not_newer(fullpath):
                         continue
 
                 checksum = do_hash(fullpath)
