@@ -77,7 +77,7 @@ class Output(object):  # {{{1
 
     @staticmethod
     def print_separator(width):  # {{{2
-        """ Print the stats table header (only if other output came before). """
+        """ Print the stats table headline (only if there is output above). """
 
         if Output.progress_with_newline:
             if Output.output_shown:
@@ -148,7 +148,7 @@ class Output(object):  # {{{1
 
     @staticmethod
     def error(*arguments, msg=""):  # {{{2
-        """ Convenience function: output a given message as error message. """
+        """ Convenience function: output a given message in error colour. """
 
         Output.clear_line()
         Output.clear_progress_text()
@@ -160,7 +160,7 @@ class Output(object):  # {{{1
 
     @staticmethod
     def warn(*arguments, msg=""):  # {{{2
-        """ Convenience function: output a given message as warning message. """
+        """ Convenience function: output a given message in warning colour. """
 
         Output.clear_line()
         Output.clear_progress_text()
@@ -245,14 +245,14 @@ class ChecksumFiles(object):  # {{{1
                             for entry in filenames:
                                 print("{} *{}".format(
                                     self._entries[entry][0], entry),
-                                      file=csfile)
+                                    file=csfile)
                     except KeyboardInterrupt:
                         ERR("\nWARNING! Interrupted while rewriting '{}'\n"
                             "Data loss is possible.".format(cspath))
                         raise
                     except OSError as error:
                         ERR(cspath,
-                            msg="Could not write to checksum file ({}): ". \
+                            msg="Could not write to checksum file ({}): ".
                             format(error.args[1]))
                 else:
                     os.unlink(cspath)
@@ -629,6 +629,7 @@ def ask_checksum_overwrite():  # {{{1
             return False
     return True
 
+
 def ask_delete_incomplete_checksum():  # {{{1
     """ Hashing a dir was interrupted, the file is incomplete. Ask what to do.
 
@@ -655,7 +656,7 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
         if ARGS.quiet < 3 and not ARGS.no_missing_checksums:
             WARN("'{}'".format(
                 "." + path[len(CWD):] if path.startswith(CWD) else path),
-                 msg="No checksum file: ")
+                msg="No checksum file: ")
         State.md5_missing += 1
         filenum += len(files)
         return 0
@@ -671,7 +672,8 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
         # full output mode: print number of files and name of directory
         if ARGS.quiet == 0:
             Output.progress(
-                "dir", dirnum, dircount, "Processing {:>{}} files in {}".format(
+                "dir", dirnum, dircount,
+                "Processing {:>{}} files in {}".format(
                     len(files), filenum_width,
                     "." + path[len(CWD):] if path.startswith(CWD) else path))
         # reduced output: only print a dot for each directory
@@ -706,15 +708,15 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
                 if not os.path.isfile(fullpath):
                     WARN("'{}' (listed in '{}')".format(
                         filename,
-                        os.path.basename(old_sums[filename][1]) \
-                            if ARGS.quiet == 0 else old_sums[filename][1]),
-                         msg=">> file does not exist: ")
+                        os.path.basename(old_sums[filename][1])
+                        if ARGS.quiet == 0 else old_sums[filename][1]),
+                        msg=">> file does not exist: ")
                     State.files_missing += 1
                     if ARGS.update:
                         checksums.remove_entry(filename)
                     continue
 
-                if not filename in old_sums.keys():
+                if filename not in old_sums.keys():
                     if not ARGS.create:
                         State.not_in_md5 += 1
                         if not ARGS.update:
@@ -843,7 +845,7 @@ def print_results(duration):  # {{{1
             value = "{:3.1f} seconds".format(duration)
             if State.total_hashed_bytes != 0:
                 value += " ({:0.1f} MiB/second)".format(
-                    State.total_hashed_bytes / 1048576 / duration \
+                    State.total_hashed_bytes / 1048576 / duration
                     if duration != 0 else 0)
             stats.append(("  time elapsed", value))
 
@@ -933,7 +935,7 @@ def main():  # {{{1
     if any([
             State.fails, State.files_missing,
             State.not_in_md5, State.md5_missing
-        ]):
+            ]):
         exit(1)
 
 
