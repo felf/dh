@@ -20,6 +20,39 @@ dh has a built-in help:
 
     $ dh.py -h
 
+Dh has three modes:
+* check mode, this is the default mode
+* write mode
+* update mode
+
+It will always work recursively.
+
+In check mode (the default), it looks for a file called Checksums.md5 by
+default. It will verify the hash of every file listed in this file, and it will
+check whether there exist any files that are not listed in the checksum file.
+
+Using the --paths option, it skips the hashing and only checks the file names.
+
+In write mode, dh will hash all files in a directory and write the hashes to
+the checksum file. It ignores the content of pre-existing checksum files, but
+warns when it is about to overwrite one.
+
+In update mode, dh first does a quick paths-mode check, but it will also fix
+any errors it finds:
+* if a file is listed in the checksum file, but does not exist, the entry is
+  removed from the checksum file
+* if it is listed, but its modification time is newer, then it is rehashed
+* if a file is not listed in the checksum file, its hash gets added
+
+Dh has a range of options to alter its behaviour:
+* the expected file name of checksum files can be modified (the default is
+  Checksums.md5)
+* it is possible to write one checksum file per input file
+* the number of directories to be processed when dealing with large file
+  hierarchies
+* output verbosity
+* and more
+
 How came dh into being?
 -----------------------
 I like to hash my media files for long-time storage or when I suspect that a
