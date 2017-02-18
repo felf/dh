@@ -234,8 +234,8 @@ class ChecksumFiles(object):  # {{{1
                 if ARGS.filename == "all":
                     # first get all entries of the required checksum file
                     filenames = [
-                        entry for entry in self._entries
-                        if self._entries[entry][1] == cspath]
+                        entry for entry, value in self._entries.items()
+                        if value[1] == cspath]
                 else:
                     filenames = list(self._entries.keys())
                 if filenames:
