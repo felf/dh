@@ -374,10 +374,13 @@ def parse_arguments():  # {{{1
         help='only check paths, don\'t compare checksums (fast)')
     group.add_argument(
         '-u', '--update', action='store_true',
-        help='only hash yet unhashed files and remove dead hash entries')
+        help='only hash yet unhashed files')
     group.add_argument(
         '-V', '--version', action='store_true',
         help='print version information and exit')
+    parser.add_argument(
+        '-d', '--delete', action='store_true',
+        help='delete hashes of nonexistant files (to be used with -p and -u)')
 
     group = parser.add_argument_group(title="file system options")
     group.add_argument(
@@ -440,6 +443,10 @@ def parse_arguments():  # {{{1
         parsed_args.quiet = 3
     if parsed_args.filename != "all":
         parsed_args.filename = os.path.basename(parsed_args.filename)
+    if parsed_args.delete:
+        if not any ((parsed_args.paths, parsed_args.update)):
+            print("error: -d only goes together with either -p or -u.")
+            exit(1)
 
     # use current dir if no dir to process was given
     if not parsed_args.locations:
@@ -712,7 +719,7 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
                         if ARGS.quiet == 0 else old_sums[filename][1]),
                         msg=">> file does not exist: ")
                     State.files_missing += 1
-                    if ARGS.update:
+                    if ARGS.delete and any((ARGS.paths, ARGS.update)):
                         checksums.remove_entry(filename)
                     continue
 
