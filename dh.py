@@ -12,7 +12,7 @@ import sys
 import time
 
 __prog_name__ = 'dh.py'
-__prog_version__ = "1.4.3"
+__prog_version__ = "1.4.4"
 
 CWD = os.getcwd()
 
