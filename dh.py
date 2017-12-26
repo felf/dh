@@ -772,12 +772,13 @@ def human_readable_size(value):  # {{{1
 def plural(number, singular_form, plural_form=""):  # {{{1
     """ Return the singular or plural form of a string depending on number. """
 
+    if number == 1:
+        return singular_form
+
     if singular_form[-1] == "y" and not plural_form:
         plural_form = singular_form[0:-1] + "ies"
 
-    if number == 1:
-        return singular_form
-    elif plural_form:
+    if plural_form:
         return plural_form
     else:
         return singular_form + "s"
