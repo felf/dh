@@ -713,11 +713,12 @@ def process_files(filenum_width, path, files, checksum_files):  # {{{1
                 # a missing file can only come from a checksum file entry, so
                 # no check for ARGS.(create|update) necessary
                 if not os.path.isfile(fullpath):
-                    WARN("'{}' (listed in '{}')".format(
-                        filename,
-                        os.path.basename(old_sums[filename][1])
-                        if ARGS.quiet == 0 else old_sums[filename][1]),
-                        msg=">> file does not exist: ")
+                    if not ARGS.update:
+                        WARN("'{}' (listed in '{}')".format(
+                            filename,
+                            os.path.basename(old_sums[filename][1])
+                            if ARGS.quiet == 0 else old_sums[filename][1]),
+                            msg=">> file does not exist: ")
                     State.files_missing += 1
                     if ARGS.delete and any((ARGS.paths, ARGS.update)):
                         checksums.remove_entry(filename)
