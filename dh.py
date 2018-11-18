@@ -118,6 +118,96 @@ class Output(object):  # {{{1
             Output.reprint_progress()
 
     @staticmethod
+    def print_results(duration):  # {{{2
+        """ Put all the statistics into a nice tabular format to read. """
+
+        # list of lines to print, left and right column as tuple
+        stats = []
+
+        stats.append(("DIRECTORIES:", ""))
+
+        stats.append(("  processed", State.dircount))
+
+        if ARGS.skip > 0:
+            stats.append(("  after skipping", ARGS.skip))
+
+        if State.skipped_overwrites > 0:
+            stats.append(("  skipped for overwriting", State.skipped_overwrites))
+
+        if State.md5_missing > 0:
+            stats.append(("  with no checksum file", State.md5_missing))
+
+        stats.append(("FILES:", ""))
+
+        if not ARGS.create:
+            stats.append(("  listed in checksum file", State.found_in_md5))
+
+            # number of files that had an entry in an existing md5 file
+            if State.not_in_md5 > 0:
+                stats.append(("  not in checksum file", State.not_in_md5))
+
+            if State.files_missing > 0:
+                stats.append(("  listed, but not found", State.files_missing))
+
+        if not ARGS.paths:
+            stats.append(("  hashed", State.hashed_files))
+
+            if not ARGS.create and not ARGS.update:
+                if not ARGS.paths:
+                    stat = ["  checks passed", State.passes]
+                    if State.passes != 0:
+                        stat.append("Green" if State.passes == State.hashed_files
+                                    else "Yellow")
+                    stats.append(stat)
+
+                    stat = ["  checks failed", State.fails]
+                    if State.fails > 0:
+                        stat.append("Red")
+                    stats.append(stat)
+
+        if not ARGS.paths:
+            stats.append(("VOLUME:", ""))
+
+            if not ARGS.paths:
+                stats.append(("  hashed bytes",
+                              0 if State.total_hashed_bytes == 0 else
+                              "{} ({})".format(
+                                  State.total_hashed_bytes,
+                                  human_readable_size(State.total_hashed_bytes))))
+
+            # --paths is fast, we don’t need time stats and total_hashed_bytes == 0
+            if not ARGS.paths:
+                value = "{:3.1f} seconds".format(duration)
+                if State.total_hashed_bytes != 0:
+                    value += " ({:0.1f} MiB/second)".format(
+                        State.total_hashed_bytes / 1048576 / duration
+                        if duration != 0 else 0)
+                stats.append(("  time elapsed", value))
+
+        # get maximum width of items for both columns
+        labelwidth = max(len(stat[0]) for stat in stats)
+        valuewidth = math.floor(max(
+            0 if stat[1] == 0 or isinstance(stat[1], str) else
+            math.log10(stat[1]) for stat in stats)) + 1
+
+        # separation line between process output and result table
+        Output.print_separator(labelwidth + valuewidth + 2)
+
+        # print results
+        for stat in stats:
+            print("{label:{labelwidth}}{colon} ".format(
+                label=stat[0],
+                labelwidth=labelwidth,
+                colon=":" if stat[1] != "" else "",
+                ), end="")
+            value = "{value:>{valuewidth}}".format(
+                value=stat[1], valuewidth=valuewidth)
+            if len(stat) == 3:
+                Output.print((stat[2], value))
+            else:
+                print(value)
+
+    @staticmethod
     def progress(what, number, total, msg=""):  # {{{2
         """ Print a progress indicator with two numbers and a possible msg. """
 
@@ -792,96 +882,6 @@ def plural(number, singular_form, plural_form=""):  # {{{1
         return singular_form + "s"
 
 
-def print_results(duration):  # {{{1
-    """ Put all the statistics into a nice tabular format to read. """
-
-    # output stuff, left and right column
-    stats = []
-
-    stats.append(("DIRECTORIES:", ""))
-
-    stats.append(("  processed", State.dircount))
-
-    if ARGS.skip > 0:
-        stats.append(("  after skipping", ARGS.skip))
-
-    if State.skipped_overwrites > 0:
-        stats.append(("  skipped for overwriting", State.skipped_overwrites))
-
-    if State.md5_missing > 0:
-        stats.append(("  with no checksum file", State.md5_missing))
-
-    stats.append(("FILES:", ""))
-
-    if not ARGS.create:
-        stats.append(("  listed in checksum file", State.found_in_md5))
-
-        # number of files that had an entry in an existing md5 file
-        if State.not_in_md5 > 0:
-            stats.append(("  not in checksum file", State.not_in_md5))
-
-        if State.files_missing > 0:
-            stats.append(("  listed, but not found", State.files_missing))
-
-    if not ARGS.paths:
-        stats.append(("  hashed", State.hashed_files))
-
-        if not ARGS.create and not ARGS.update:
-            if not ARGS.paths:
-                stat = ["  checks passed", State.passes]
-                if State.passes != 0:
-                    stat.append("Green" if State.passes == State.hashed_files
-                                else "Yellow")
-                stats.append(stat)
-
-                stat = ["  checks failed", State.fails]
-                if State.fails > 0:
-                    stat.append("Red")
-                stats.append(stat)
-
-    if not ARGS.paths:
-        stats.append(("VOLUME:", ""))
-
-        if not ARGS.paths:
-            stats.append(("  hashed bytes",
-                          0 if State.total_hashed_bytes == 0 else
-                          "{} ({})".format(
-                              State.total_hashed_bytes,
-                              human_readable_size(State.total_hashed_bytes))))
-
-        # --paths is fast, we don’t need time stats and total_hashed_bytes == 0
-        if not ARGS.paths:
-            value = "{:3.1f} seconds".format(duration)
-            if State.total_hashed_bytes != 0:
-                value += " ({:0.1f} MiB/second)".format(
-                    State.total_hashed_bytes / 1048576 / duration
-                    if duration != 0 else 0)
-            stats.append(("  time elapsed", value))
-
-    # get maximum width of items for both columns
-    labelwidth = max(len(stat[0]) for stat in stats)
-    valuewidth = math.floor(max(
-        0 if stat[1] == 0 or isinstance(stat[1], str) else
-        math.log10(stat[1]) for stat in stats)) + 1
-
-    # separation line between process output and result table
-    Output.print_separator(labelwidth + valuewidth + 2)
-
-    # print results
-    for stat in stats:
-        print("{label:{labelwidth}}{colon} ".format(
-            label=stat[0],
-            labelwidth=labelwidth,
-            colon=":" if stat[1] != "" else "",
-            ), end="")
-        value = "{value:>{valuewidth}}".format(
-            value=stat[1], valuewidth=valuewidth)
-        if len(stat) == 3:
-            Output.print((stat[2], value))
-        else:
-            print(value)
-
-
 def main():  # {{{1
     """ This is where everything comes together. """
 
@@ -939,7 +939,7 @@ def main():  # {{{1
         endtime = time.time()
         duration = endtime - starttime
 
-    print_results(duration)
+    Output.print_results(duration)
 
     if any([
             State.fails, State.files_missing,
