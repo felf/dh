@@ -442,6 +442,58 @@ class ChecksumFiles(object):  # {{{1
         return None if entry is None else entry[0] == checksum
 
 
+class State(object):  # {{{1
+    """ Data class to encapsulate all necessary state variables. """
+
+    # number of matching directories (i.e. those that contain files to process)
+    dircount = 0
+    # number of matching directories to skip at the beginning
+    skip = 0
+    # number of matching directories after which to exit
+    limit = 0
+    # number of directories skipped due to answer to overwrite question
+    skipped_overwrites = 0
+    # number of files processed
+    hashed_files = 0
+    # number of failed md5 checks
+    fails = 0
+    # number of passed md5 checks
+    passes = 0
+    # number of files listed in md5, but physically missing
+    files_missing = 0
+    # number of files that had an entry in an existing md5 file
+    found_in_md5 = 0
+    # number of files not listed in existing md5 file
+    not_in_md5 = 0
+    # number of matching directories without md5 file
+    md5_missing = 0
+    # number of bytes processed during hasing
+    total_hashed_bytes = 0
+
+    # answer flags for the question about already existing md5 files
+    # overwrite all following md5 collisions
+    overwrite_all = False
+    # skip all following directories with md5 collisions
+    skip_all = False
+    # whether a question was asked (which means there was output)
+    question_asked = False
+
+    @staticmethod
+    def set_from_arguments(arguments):  # {{{2
+        """ Set relevant statistics according to main arguments. """
+
+        State.skip = arguments.skip
+        State.limit = arguments.number
+        State.overwrite_all = arguments.overwrite
+
+
+class RecursionException(Exception):  # {{{1
+
+    """ Base class for custom exceptions. """
+
+    pass
+
+
 def parse_arguments():  # {{{1
     """ Parse commandline arguments and return the argparse object. """
 
@@ -546,60 +598,7 @@ def parse_arguments():  # {{{1
     return parsed_args
 
 ARGS = parse_arguments()
-
-
-class State(object):  # {{{1
-    """ Encapsulate al necessary state variables for the recursion. """
-
-    # number of matching directories (i.e. those that contain files to process)
-    dircount = 0
-    # number of matching directories to skip at the beginning
-    skip = 0
-    # number of matching directories after which to exit
-    limit = 0
-    # number of directories skipped due to answer to overwrite question
-    skipped_overwrites = 0
-    # number of files processed
-    hashed_files = 0
-    # number of failed md5 checks
-    fails = 0
-    # number of passed md5 checks
-    passes = 0
-    # number of files listed in md5, but physically missing
-    files_missing = 0
-    # number of files that had an entry in an existing md5 file
-    found_in_md5 = 0
-    # number of files not listed in existing md5 file
-    not_in_md5 = 0
-    # number of matching directories without md5 file
-    md5_missing = 0
-    # number of bytes processed during hasing
-    total_hashed_bytes = 0
-
-    # answer flags for the question about already existing md5 files
-    # overwrite all following md5 collisions
-    overwrite_all = False
-    # skip all following directories with md5 collisions
-    skip_all = False
-    # whether a question was asked (which means there was output)
-    question_asked = False
-
-    @staticmethod
-    def set_from_arguments(arguments):  # {{{2
-        """ Set relevant statistics according to main arguments. """
-
-        State.skip = arguments.skip
-        State.limit = arguments.number
-        State.overwrite_all = arguments.overwrite
-
 State.set_from_arguments(ARGS)
-
-
-class RecursionException(Exception):  # {{{1
-
-    """ Base class for custom exceptions. """
-
-    pass
 
 
 def do_hash(path):  # {{{1
