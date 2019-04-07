@@ -173,9 +173,10 @@ class Output(object):  # {{{1
                               0 if State.total_hashed_bytes == 0 else
                               "{} ({})".format(
                                   State.total_hashed_bytes,
-                                  human_readable_size(State.total_hashed_bytes))))
+                                  human_readable_size(State.total_hashed_bytes)
+                              )))
 
-            # --paths is fast, we don’t need time stats and total_hashed_bytes == 0
+            # --paths is fast, we don’t need times and total_hashed_bytes == 0
             if not ARGS.paths:
                 value = "{:3.1f} seconds".format(duration)
                 if State.total_hashed_bytes != 0:
@@ -259,6 +260,7 @@ class Output(object):  # {{{1
         else:
             Output.print_line(("Yellow", "".join(arguments)), file=sys.stderr)
         Output.output_shown = True
+
 
 OUT = Output.print_line
 ERR = Output.error
@@ -586,7 +588,7 @@ def parse_arguments():  # {{{1
     if parsed_args.filename != "all":
         parsed_args.filename = os.path.basename(parsed_args.filename)
     if parsed_args.delete:
-        if not any ((parsed_args.paths, parsed_args.update)):
+        if not any((parsed_args.paths, parsed_args.update)):
             print("error: -d only goes together with either -p or -u.")
             exit(1)
 
@@ -596,6 +598,7 @@ def parse_arguments():  # {{{1
 
     Output.progress_with_newline = parsed_args.verbose
     return parsed_args
+
 
 ARGS = parse_arguments()
 State.set_from_arguments(ARGS)
