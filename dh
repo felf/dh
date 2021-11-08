@@ -76,6 +76,24 @@ class Output(object):  # {{{1
         print(" " * len(Output.last_progress_text), end="\r")
 
     @staticmethod
+    def hms(duration):
+        """ convert number of seconds to hours-minutes-seconds representation """
+
+        hours = duration // 3600
+        seconds = duration % 3600
+        minutes = seconds // 60
+        seconds %= 60
+
+        result = []
+        if hours > 0:
+            result.append("{:0f} {}".format(hours, plural(hours, "hour")))
+        if minutes > 0:
+            result.append("{:0f} {}".format(minutes, plural(minutes, "minute")))
+        if seconds > 0 or duration == 0:
+            result.append("{:.0f} {}".format(seconds, plural(round(seconds), "second")))
+        return ", ".join(result)
+
+    @staticmethod
     def print_separator(width):  # {{{2
         """ Print the stats table headline (only if there is output above). """
 
@@ -179,10 +197,18 @@ class Output(object):  # {{{1
             # --paths is fast, we don’t need times and total_hashed_bytes == 0
             if not ARGS.paths:
                 value = "{:3.1f} seconds".format(duration)
+                valueadd = []
+                if duration > 60:
+                    valueadd.append(Output.hms(duration))
+
                 if State.total_hashed_bytes != 0:
-                    value += " ({:0.1f} MiB/second)".format(
+                    valueadd.append("{:0.1f} MiB/s".format(
                         State.total_hashed_bytes / 1048576 / duration
                         if duration != 0 else 0)
+                        )
+
+                if valueadd:
+                    value = "{} ({})".format(value, "; ".join(valueadd))
                 stats.append(("  time elapsed", value))
 
         # get maximum width of items for both columns
