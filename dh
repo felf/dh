@@ -546,7 +546,7 @@ def parse_arguments():  # {{{1
         help='only check paths, don\'t compare checksums (fast)')
     group.add_argument(
         '-u', '--update', action='store_true',
-        help='only hash yet unhashed files')
+        help='only update paths and hash yet unhashed files')
     group.add_argument(
         '-V', '--version', action='store_true',
         help='print version information and exit')

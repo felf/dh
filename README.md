@@ -2,7 +2,7 @@ dh – dirhash
 ============
 
 https://github.com/felf/dh
-Copyright © 2013–2017 Frank Steinmetzger
+Copyright © 2013–2021 Frank Steinmetzger
 
 Synopsis
 --------
@@ -92,7 +92,7 @@ Here are some notable ToDos:
   album-md5). This (c|sh)hould be extended to other hash algorithms.
 * manpage
 * installation procedure (setup.py)
-* tests?
+* tests ;-)
 * handle terminal resizes
 * -x option to stop at file system boundaries
 * The class that handles terminal output seems a mess to me. It is the
