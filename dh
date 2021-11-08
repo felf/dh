@@ -877,12 +877,12 @@ def plural(number, singular_form, plural_form=""):  # {{{1
     if number == 1:
         return singular_form
 
-    if singular_form[-1] == "y" and not plural_form:
-        plural_form = singular_form[0:-1] + "ies"
-
     if plural_form:
         return plural_form
     else:
+        if singular_form[-1] == "y":
+            return singular_form[0:-1] + "ies"
+
         return singular_form + "s"
 
 
