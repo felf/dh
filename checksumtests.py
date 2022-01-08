@@ -37,6 +37,11 @@ TEST_DATA = (
             [], 0, "empty directory", ()
         ),
         (
+            [], 0, "empty directory and subdirectory", (
+                (True,  True, 'subdir/', None),
+            )
+        ),
+        (
             [], 0, "simple check with correct checksum", (
                 (True, True, 'foo.txt', 'foo\n'),
                 (True, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
@@ -46,6 +51,12 @@ TEST_DATA = (
             [], 1, "simple check with wrong checksum", (
                 (True,  True, 'foo.txt', 'foo\n'),
                 (True, True, 'Checksums.md5', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *foo.txt\n'),
+            )
+        ),
+        (
+            ['-c'], 0, "simple creation with one file", (
+                (True,  True, 'foo.txt', 'foo\n'),
+                (False, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
             )
         ),
         (
@@ -66,6 +77,24 @@ TEST_DATA = (
                 (True,  True, 'foo.txt', 'foo\n', +1),
                 (True, False, 'Checksums.md5', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *foo.txt\n'),
                 (False, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
+            )
+        ),
+
+        (
+            ['-c'], 0, "creation with subdir with one file", (
+                (True,  True, 'subdir/', None),
+                (True,  True, 'subdir/foo.txt', 'foo\n'),
+                (False, True, 'subdir/Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
+                (True,  True, 'ignored.txt', ''),
+            )
+        ),
+        (
+            ['-cf'], 0, "creation with subdir and with file in root", (
+                (True,  True, 'subdir/', None),
+                (True,  True, 'subdir/foo.txt', 'foo\n'),
+                (False, True, 'subdir/Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
+                (True,  True, 'root.txt', 'foo\n'),
+                (False, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *root.txt\n'),
             )
         ),
 )
