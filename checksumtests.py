@@ -109,11 +109,7 @@ def clean_up(path):
             os.unlink(entry)
 
 
-for test_case in TEST_DATA:
-    if SKIP_TESTS > 0:
-        SKIP_TESTS -= 1
-        continue
-
+def do_test_case(test_case):
     args, exit_code, comment, entries = test_case
     testing(comment)
 
@@ -163,9 +159,19 @@ for test_case in TEST_DATA:
                 os.unlink(filename)
         passed()
 
-os.rmdir(TEST_ROOT)
 
-COUNT = len(TEST_DATA)
-print()
-print('Failed test cases:', coloured('31', FAILED, FAILED != 0))
-print('Passed test cases:', coloured('32', f'{PASSED}/{COUNT}', PASSED == COUNT))
+if __name__ == "__main__":
+    for test_case in TEST_DATA:
+        if SKIP_TESTS > 0:
+            SKIP_TESTS -= 1
+            continue
+
+        do_test_case(test_case)
+
+
+    os.rmdir(TEST_ROOT)
+
+    COUNT = len(TEST_DATA)
+    print()
+    print('Failed test cases:', coloured('31', FAILED, FAILED != 0))
+    print('Passed test cases:', coloured('32', f'{PASSED}/{COUNT}', PASSED == COUNT))
