@@ -60,9 +60,17 @@ TEST_DATA = (
             )
         ),
         (
-            ['-u'], 0, "simple update with one file without checksum file", (
+            ['-u'], 0, "simple update with one file without checksum file and one ignored dotfile", (
+                (True,  True, '.foo.txt', 'foo\n'),
                 (True,  True, 'foo.txt', 'foo\n'),
                 (False, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
+            )
+        ),
+        (
+            ['-au'], 0, "simple update with one file without checksum file and one ignored dotfile", (
+                (True,  True, '.foo.txt', 'foo\n'),
+                (True,  True, 'foo.txt', 'foo\n'),
+                (False, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *.foo.txt\nd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
             )
         ),
         (
