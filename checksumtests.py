@@ -81,6 +81,21 @@ TEST_DATA = (
         ),
 
         (
+            ['-u'], 1, "update with one file and two checksum entries", (
+                (True,  True, 'foo.txt', 'foo\n', +1),
+                (True, False, 'Checksums.md5', 'ffffffffffffffffffffffffffffffff *foo.txt\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *bar.txt\n'),
+                (False, True, 'Checksums.md5', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *bar.txt\nd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
+            )
+        ),
+        (
+            ['-du'], 1, "update with one file, two checksum entries and deletion of unreferenced entry", (
+                (True,  True, 'foo.txt', 'foo\n', +1),
+                (True, False, 'Checksums.md5', 'ffffffffffffffffffffffffffffffff *foo.txt\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *bar.txt\n'),
+                (False, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
+            )
+        ),
+
+        (
             ['-c'], 0, "creation with subdir with one file", (
                 (True,  True, 'subdir/', None),
                 (True,  True, 'subdir/foo.txt', 'foo\n'),
