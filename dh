@@ -407,7 +407,7 @@ class ChecksumFiles(object):  # {{{1
         Return true if file is not newer than checksum file. """
 
         return os.path.getmtime(filename) < self._csfiles[
-            self._entries[os.path.basename(filename)][1]]
+            self._entries[filename.removeprefix(self._path)][1]]
 
     def is_modified(self):  # {{{2
         """ Getter. """
