@@ -214,10 +214,10 @@ def clean_up(path):
     """ Delete all test data. """
     for entry in os.listdir(path):
         if os.path.isdir(entry):
-            clean_up(entry)
-            os.rmdir(entry)
+            clean_up(path + entry + os.path.sep)
+            os.rmdir(path + entry)
         else:
-            os.unlink(entry)
+            os.unlink(path + entry)
 
 
 def do_test_case(test_case):
