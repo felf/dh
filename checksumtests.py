@@ -74,6 +74,7 @@ PASSED = 0
 FAILED = 0
 # for debugging purposes
 SKIP_TESTS = 0
+COUNT = len(TEST_DATA) - SKIP_TESTS
 
 TEST_ROOT = tempfile.mkdtemp(prefix='dhtest-') + os.path.sep
 DH_PATH = os.getcwd() + os.path.sep + 'dh'
@@ -201,7 +202,6 @@ if __name__ == "__main__":
 
     os.rmdir(TEST_ROOT)
 
-    COUNT = len(TEST_DATA)
     print()
     print('Failed test cases:', coloured('31', FAILED, FAILED != 0))
     print('Passed test cases:', coloured('32', f'{PASSED}/{COUNT}', PASSED == COUNT))
