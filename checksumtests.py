@@ -143,6 +143,7 @@ def do_test_case(test_case):
 
     # compare the result with the expected data
     if set(expected.keys()) != set(result):
+        clean_up(TEST_ROOT)
         failed('directory content')
         return False
 
@@ -155,6 +156,7 @@ def do_test_case(test_case):
             with open(filename, encoding='utf8') as file:
                 content = file.read()
                 if content != expected[filename]:
+                    clean_up(TEST_ROOT)
                     failed(f'content of file {filename}')
                     return False
             os.unlink(filename)
