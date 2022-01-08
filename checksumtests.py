@@ -14,12 +14,14 @@ Test data format: a tuple of test cases.
         - whether it shall exist after the dh run
         - the path of the entry starting at test root
         - content of the entry (ignored for directories)
+        - an optional fifth item with an age delta in hours for this file
 
 Each test creates the test root directory and sets up the a-priori structure.
 Then it runs dh over the directory. Finally, it compares the content of the
 directory with the expected files.
 """
 
+import datetime
 import os
 import subprocess
 import sys
@@ -47,8 +49,22 @@ TEST_DATA = (
             )
         ),
         (
-            ['-u'], 0, "simple update with one file", (
+            ['-u'], 0, "simple update with one file without checksum file", (
                 (True,  True, 'foo.txt', 'foo\n'),
+                (False, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
+            )
+        ),
+        (
+            ['-u'], 0, "simple update with one file older than checksum file", (
+                (True,  True, 'foo.txt', 'foo\n', -1),
+                (True, False, 'Checksums.md5', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *foo.txt\n'),
+                (False, True, 'Checksums.md5', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *foo.txt\n'),
+            ),
+        ),
+        (
+            ['-u'], 0, "simple update with one file newer than checksum file", (
+                (True,  True, 'foo.txt', 'foo\n', +1),
+                (True, False, 'Checksums.md5', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *foo.txt\n'),
                 (False, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
             )
         ),
@@ -120,14 +136,19 @@ def do_test_case(test_case):
     testing(comment)
 
     # given: create input directory structure
-    for before, after, name, content in entries:
+    for entry in entries:
+        before, after, filename, content = entry[:4]
         if not before:
             continue
-        if name.endswith('/'):
-            os.mkdir(name)
+        if filename.endswith('/'):
+            os.mkdir(filename)
         else:
-            with open(name, 'w', encoding='utf8') as file:
+            with open(filename, 'w', encoding='utf8') as file:
                 file.write(content)
+        if len(entry) == 5:
+            newtime = datetime.datetime.timestamp(datetime.datetime.now())
+            newtime = int((newtime + entry[4] * 3600) * 1000000000)
+            os.utime(filename, ns=(newtime, newtime))
 
     # when: run dh on the test data
     completed = subprocess.run(
