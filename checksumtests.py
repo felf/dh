@@ -27,6 +27,7 @@ import subprocess
 import sys
 import tempfile
 
+# pylint: disable=line-too-long
 
 if sys.version_info[0] < 3 or sys.version_info[1] < 5:
     print('Need python 3.5 or up.', file=sys.stderr)
