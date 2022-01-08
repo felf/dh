@@ -39,7 +39,7 @@ TEST_DATA = (
         ),
         (
             [], 0, "empty directory and subdirectory", (
-                (True,  True, 'subdir/', None),
+                (True, True, 'subdir/', None),
             )
         ),
         (
@@ -60,40 +60,40 @@ TEST_DATA = (
         ),
         (
             [], 1, "simple check with wrong checksum", (
-                (True,  True, 'foo.txt', 'foo\n'),
+                (True, True, 'foo.txt', 'foo\n'),
                 (True, True, 'Checksums.md5', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *foo.txt\n'),
             )
         ),
         (
             ['-c'], 0, "simple creation with one file", (
-                (True,  True, 'foo.txt', 'foo\n'),
+                (True, True, 'foo.txt', 'foo\n'),
                 (False, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
             )
         ),
         (
             ['-u'], 0, "simple update with one file without checksum file and one ignored dotfile", (
-                (True,  True, '.foo.txt', 'foo\n'),
-                (True,  True, 'foo.txt', 'foo\n'),
+                (True, True, '.foo.txt', 'foo\n'),
+                (True, True, 'foo.txt', 'foo\n'),
                 (False, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
             )
         ),
         (
             ['-au'], 0, "simple update with one file without checksum file and one ignored dotfile", (
-                (True,  True, '.foo.txt', 'foo\n'),
-                (True,  True, 'foo.txt', 'foo\n'),
+                (True, True, '.foo.txt', 'foo\n'),
+                (True, True, 'foo.txt', 'foo\n'),
                 (False, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *.foo.txt\nd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
             )
         ),
         (
             ['-u'], 0, "simple update with one file older than checksum file", (
-                (True,  True, 'foo.txt', 'foo\n', -1),
+                (True, True, 'foo.txt', 'foo\n', -1),
                 (True, False, 'Checksums.md5', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *foo.txt\n'),
                 (False, True, 'Checksums.md5', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *foo.txt\n'),
             ),
         ),
         (
             ['-u'], 0, "simple update with one file newer than checksum file", (
-                (True,  True, 'foo.txt', 'foo\n', +1),
+                (True, True, 'foo.txt', 'foo\n', +1),
                 (True, False, 'Checksums.md5', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *foo.txt\n'),
                 (False, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
             )
@@ -101,14 +101,14 @@ TEST_DATA = (
 
         (
             ['-u'], 1, "update with one file and two checksum entries", (
-                (True,  True, 'foo.txt', 'foo\n', +1),
+                (True, True, 'foo.txt', 'foo\n', +1),
                 (True, False, 'Checksums.md5', 'ffffffffffffffffffffffffffffffff *foo.txt\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *bar.txt\n'),
                 (False, True, 'Checksums.md5', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *bar.txt\nd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
             )
         ),
         (
             ['-du'], 1, "update with one file, two checksum entries and deletion of unreferenced entry", (
-                (True,  True, 'foo.txt', 'foo\n', +1),
+                (True, True, 'foo.txt', 'foo\n', +1),
                 (True, False, 'Checksums.md5', 'ffffffffffffffffffffffffffffffff *foo.txt\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *bar.txt\n'),
                 (False, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
             )
@@ -116,41 +116,41 @@ TEST_DATA = (
 
         (
             ['-c'], 0, "creation with subdir with one file", (
-                (True,  True, 'subdir/', None),
-                (True,  True, 'subdir/foo.txt', 'foo\n'),
+                (True, True, 'ignored.txt', ''),
+                (True, True, 'subdir/', None),
+                (True, True, 'subdir/foo.txt', 'foo\n'),
                 (False, True, 'subdir/Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
-                (True,  True, 'ignored.txt', ''),
             )
         ),
         (
             ['-cf'], 0, "creation with subdir and with file in root", (
-                (True,  True, 'subdir/', None),
-                (True,  True, 'subdir/foo.txt', 'foo\n'),
+                (True, True, 'root.txt', 'foo\n'),
+                (True, True, 'subdir/', None),
+                (True, True, 'subdir/foo.txt', 'foo\n'),
                 (False, True, 'subdir/Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
-                (True,  True, 'root.txt', 'foo\n'),
                 (False, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *root.txt\n'),
             )
         ),
 
         (
             ['-u', '-F', 'test.md5'], 0, "simple update with different checksum file name", (
-                (True,  True, 'foo.txt', 'foo\n'),
-                (True,  True, 'bar.txt', 'foo\n'),
+                (True, True, 'foo.txt', 'foo\n'),
+                (True, True, 'bar.txt', 'foo\n'),
                 (False, True, 'test.md5', 'd3b07384d113edec49eaa6238ad5ff00 *bar.txt\nd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
             ),
         ),
         (
             ['-u', '-F', 'all'], 0, "simple update with individual checksum files", (
-                (True,  True, 'foo.txt', 'foo\n'),
-                (True,  True, 'bar.txt', 'foo\n'),
+                (True, True, 'foo.txt', 'foo\n'),
+                (True, True, 'bar.txt', 'foo\n'),
                 (False, True, 'foo.txt.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
                 (False, True, 'bar.txt.md5', 'd3b07384d113edec49eaa6238ad5ff00 *bar.txt\n'),
             )
         ),
         (
             ['-u', '-F', 'test.md5'], 0, "simple update with different checksum file name", (
-                (True,  True, 'foo.txt', 'foo\n'),
-                (True,  True, 'bar.txt', 'foo\n'),
+                (True, True, 'foo.txt', 'foo\n'),
+                (True, True, 'bar.txt', 'foo\n'),
                 (False, True, 'test.md5', 'd3b07384d113edec49eaa6238ad5ff00 *bar.txt\nd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
             ),
         ),
@@ -158,28 +158,28 @@ TEST_DATA = (
         (
             # return code 1, because subdir has no checksum file
             ['-f'], 1, "check with subdir and one checksum file at root, none in subdir", (
-                (True,  True, 'subdir/', None),
-                (True,  True, 'subdir/foo.txt', 'foo\n'),
-                (True,  True, 'foo.txt', 'foo\n'),
-                (True,  True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\nd3b07384d113edec49eaa6238ad5ff00 *subdir/foo.txt\n'),
+                (True, True, 'subdir/', None),
+                (True, True, 'subdir/foo.txt', 'foo\n'),
+                (True, True, 'foo.txt', 'foo\n'),
+                (True, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\nd3b07384d113edec49eaa6238ad5ff00 *subdir/foo.txt\n'),
             )
         ),
         (
             # now return code 0, because the missing file is ignored
             ['-f', '--no-missing-checksums'], 0, "check with subdir and one checksum file at root, none in subdir, ignoring that", (
-                (True,  True, 'subdir/', None),
-                (True,  True, 'subdir/foo.txt', 'foo\n'),
-                (True,  True, 'foo.txt', 'foo\n'),
-                (True,  True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\nd3b07384d113edec49eaa6238ad5ff00 *subdir/foo.txt\n'),
+                (True, True, 'subdir/', None),
+                (True, True, 'subdir/foo.txt', 'foo\n'),
+                (True, True, 'foo.txt', 'foo\n'),
+                (True, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\nd3b07384d113edec49eaa6238ad5ff00 *subdir/foo.txt\n'),
             )
         ),
         (
             # return code 0 despite globally incomplete checksum, because for its own # dir, it is complete (see option -s, to be implemented)
             ['-f', '--no-missing-checksums'], 0, "check with subdir and one incomplete checksum file at root", (
-                (True,  True, 'subdir/', None),
-                (True,  True, 'subdir/foo.txt', 'foo\n'),
-                (True,  True, 'foo.txt', 'foo\n'),
-                (True,  True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
+                (True, True, 'subdir/', None),
+                (True, True, 'subdir/foo.txt', 'foo\n'),
+                (True, True, 'foo.txt', 'foo\n'),
+                (True, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
             )
         ),
 
@@ -276,9 +276,9 @@ def do_test_case(test_case):
 
     # when: run dh on the test data
     completed = subprocess.run(
-            [DH_PATH, '-qqq'] + args,
-            capture_output=True,
-            check=False, text=True)
+        [DH_PATH, '-qqq'] + args,
+        capture_output=True,
+        check=False, text=True)
 
     # then: gather the result and compare with expected content
     if exit_code != completed.returncode:
