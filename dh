@@ -973,7 +973,8 @@ def main():  # {{{1
 
     if any([
             State.fails, State.files_missing,
-            State.not_in_md5 and not ARGS.update, State.md5_missing
+            State.not_in_md5 and not ARGS.update,
+            State.md5_missing and not ARGS.no_missing_checksums
             ]):
         exit(1)
 
