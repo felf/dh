@@ -97,6 +97,29 @@ TEST_DATA = (
                 (False, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *root.txt\n'),
             )
         ),
+
+        (
+            ['-u', '-F', 'test.md5'], 0, "simple update with different checksum file name", (
+                (True,  True, 'foo.txt', 'foo\n'),
+                (True,  True, 'bar.txt', 'foo\n'),
+                (False, True, 'test.md5', 'd3b07384d113edec49eaa6238ad5ff00 *bar.txt\nd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
+            ),
+        ),
+        (
+            ['-u', '-F', 'all'], 0, "simple update with individual checksum files", (
+                (True,  True, 'foo.txt', 'foo\n'),
+                (True,  True, 'bar.txt', 'foo\n'),
+                (False, True, 'foo.txt.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
+                (False, True, 'bar.txt.md5', 'd3b07384d113edec49eaa6238ad5ff00 *bar.txt\n'),
+            )
+        ),
+        (
+            ['-u', '-F', 'test.md5'], 0, "simple update with different checksum file name", (
+                (True,  True, 'foo.txt', 'foo\n'),
+                (True,  True, 'bar.txt', 'foo\n'),
+                (False, True, 'test.md5', 'd3b07384d113edec49eaa6238ad5ff00 *bar.txt\nd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
+            ),
+        ),
 )
 
 PASSED = 0
