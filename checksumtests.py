@@ -108,6 +108,7 @@ def coloured(colour, value, do_colour=True):
         return f"\033[1;{colour}m{str(value)}\033[0m"
     return str(value)
 
+
 def failed(reason):
     """ Write progress string. """
     global FAILED  # pylint: disable=global-statement
@@ -133,12 +134,17 @@ def clean_up(path):
 
 
 def do_test_case(test_case):
+    """ Perform all actions pertaining to a single test case.
+
+    :param test_case: tuple with test data (see definition of TEST_CASE)
+    """
+
     args, exit_code, comment, entries = test_case
     testing(comment)
 
     # given: create input directory structure
     for entry in entries:
-        before, after, filename, content = entry[:4]
+        before, _, filename, content = entry[:4]
         if not before:
             continue
         if filename.endswith('/'):
@@ -188,17 +194,18 @@ def do_test_case(test_case):
                     failed(f'content of file {filename}')
                     return False
             os.unlink(filename)
+
     passed()
+    return True
 
 
 if __name__ == "__main__":
-    for test_case in TEST_DATA:
+    for test_data_item in TEST_DATA:
         if SKIP_TESTS > 0:
             SKIP_TESTS -= 1
             continue
 
-        do_test_case(test_case)
-
+        do_test_case(test_data_item)
 
     os.rmdir(TEST_ROOT)
 
