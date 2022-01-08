@@ -42,6 +42,16 @@ TEST_DATA = (
             )
         ),
         (
+            [], 1, "simple check with missing checksum file", (
+                (True, True, 'foo.txt', 'foo\n'),
+            )
+        ),
+        (
+            ['--no-missing-checksums'], 0, "simple check with missing checksum file, but ignoring that", (
+                (True, True, 'foo.txt', 'foo\n'),
+            )
+        ),
+        (
             [], 0, "simple check with correct checksum", (
                 (True, True, 'foo.txt', 'foo\n'),
                 (True, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
