@@ -119,11 +119,13 @@ def get_dirlist(prefix, output):
     :return: the result as a flat list: ['subdir/', 'subdir/file', 'file']
     """
 
-    dirlist = os.listdir()
+    dirlist = os.listdir(prefix if prefix else '.')
     for entry in dirlist:
-        output.append(prefix + entry)
         if os.path.isdir(entry):
-            get_dirlist(prefix + entry + os.path.sep, output)
+            output.append(prefix + entry + os.path.sep)
+            get_dirlist(output[-1], output)
+        else:
+            output.append(prefix + entry)
 
 
 def testing(text):
