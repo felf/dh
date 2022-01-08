@@ -133,31 +133,32 @@ def do_test_case(test_case):
     if exit_code != completed.returncode:
         clean_up(TEST_ROOT)
         failed(f'exit code. Expected={exit_code}, Actual={completed.returncode}')
-    else:
-        # dictionary mapping filename to file content
-        expected = {entry[2]: entry[3] for entry in entries if entry[1]}
+        return False
 
-        result = []
-        get_dirlist('', result)
+    # dictionary mapping filename to file content
+    expected = {entry[2]: entry[3] for entry in entries if entry[1]}
 
-        # compare the result with the expected data
-        if set(expected.keys()) != set(result):
-            failed('directory content')
+    result = []
+    get_dirlist('', result)
+
+    # compare the result with the expected data
+    if set(expected.keys()) != set(result):
+        failed('directory content')
+        return False
+
+    # check file content and clean up in the same loop
+    result.reverse()
+    for filename in result:
+        if filename.endswith(os.path.sep):
+            os.rmdir(filename)
         else:
-            pass
-
-        # check file content and clean up in the same loop
-        result.reverse()
-        for filename in result:
-            if filename.endswith(os.path.sep):
-                os.rmdir(filename)
-            else:
-                with open(filename, encoding='utf8') as file:
-                    content = file.read()
-                    if content != expected[filename]:
-                        failed(f'content of file {filename}')
-                os.unlink(filename)
-        passed()
+            with open(filename, encoding='utf8') as file:
+                content = file.read()
+                if content != expected[filename]:
+                    failed(f'content of file {filename}')
+                    return False
+            os.unlink(filename)
+    passed()
 
 
 if __name__ == "__main__":
