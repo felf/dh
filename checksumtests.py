@@ -153,6 +153,35 @@ TEST_DATA = (
                 (False, True, 'test.md5', 'd3b07384d113edec49eaa6238ad5ff00 *bar.txt\nd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
             ),
         ),
+
+        (
+            # return code 1, because subdir has no checksum file
+            ['-f'], 1, "check with subdir and one checksum file at root, none in subdir", (
+                (True,  True, 'subdir/', None),
+                (True,  True, 'subdir/foo.txt', 'foo\n'),
+                (True,  True, 'foo.txt', 'foo\n'),
+                (True,  True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\nd3b07384d113edec49eaa6238ad5ff00 *subdir/foo.txt\n'),
+            )
+        ),
+        (
+            # now return code 0, because the missing file is ignored
+            ['-f', '--no-missing-checksums'], 0, "check with subdir and one checksum file at root, none in subdir, ignoring that", (
+                (True,  True, 'subdir/', None),
+                (True,  True, 'subdir/foo.txt', 'foo\n'),
+                (True,  True, 'foo.txt', 'foo\n'),
+                (True,  True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\nd3b07384d113edec49eaa6238ad5ff00 *subdir/foo.txt\n'),
+            )
+        ),
+        (
+            # return code 0 despite globally incomplete checksum, because for its own # dir, it is complete (see option -s, to be implemented)
+            ['-f', '--no-missing-checksums'], 0, "check with subdir and one incomplete checksum file at root", (
+                (True,  True, 'subdir/', None),
+                (True,  True, 'subdir/foo.txt', 'foo\n'),
+                (True,  True, 'foo.txt', 'foo\n'),
+                (True,  True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
+            )
+        ),
+
 )
 
 PASSED = 0
