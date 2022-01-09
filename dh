@@ -677,8 +677,7 @@ def parse_arguments():  # {{{1
         sys.exit(0)
     if parsed_args.quiet > 0 and parsed_args.verbose:
         sys.exit("error: quiet and verbose options cannot be mixed.")
-    if parsed_args.quiet > 3:
-        parsed_args.quiet = 3
+    parsed_args.quiet = min(3, parsed_args.quiet)
     if parsed_args.filename != "all":
         parsed_args.filename = os.path.basename(parsed_args.filename)
     if parsed_args.delete:
@@ -821,15 +820,15 @@ def ask_checksum_overwrite():  # {{{1
                 break
         if answer == "o":
             return True
-        elif answer == "v":
+        if answer == "v":
             State.overwrite_all = True
             return True
-        elif answer == "a":
+        if answer == "a":
             raise RecursionException("aborted")
-        elif answer == "l":
+        if answer == "l":
             State.skip_all = True
             return False
-        elif answer == "s":
+        if answer == "s":
             return False
     return True
 
@@ -873,7 +872,7 @@ def process_directory(filenum_width, path, files, checksum_files):  # {{{1
                 msg="No checksum file: ")
         State.md5_missing += 1
         filenum += len(files)
-        return 0
+        return
 
     if State.skip_all and ARGS.create and checksum_files:
         Output.progress(
@@ -881,18 +880,18 @@ def process_directory(filenum_width, path, files, checksum_files):  # {{{1
                 "." + path[len(CWD):] if path.startswith(CWD) else path))
         State.skipped_overwrites += 1
         filenum += len(files)
-        return 0
-    else:
-        # full output mode: print number of files and name of directory
-        if ARGS.quiet == 0:
-            Output.progress(
-                "dir", dirnum, dircount,
-                "Processing {:>{}} files in {}".format(
-                    len(files), filenum_width,
-                    "." + path[len(CWD):] if path.startswith(CWD) else path))
-        # reduced output: only print a dot for each directory
-        elif ARGS.quiet == 1:
-            Output.progress("dir", dirnum, dircount)
+        return
+
+    # full output mode: print number of files and name of directory
+    if ARGS.quiet == 0:
+        Output.progress(
+            "dir", dirnum, dircount,
+            "Processing {:>{}} files in {}".format(
+                len(files), filenum_width,
+                "." + path[len(CWD):] if path.startswith(CWD) else path))
+    # reduced output: only print a dot for each directory
+    elif ARGS.quiet == 1:
+        Output.progress("dir", dirnum, dircount)
 
     # the checksum file will be overwritten -> ask how to proceed {{{2
     # TODO: -F all (right now, it asks only for the dir's first file)
@@ -900,7 +899,7 @@ def process_directory(filenum_width, path, files, checksum_files):  # {{{1
             path + checksum_files[0]) and not ask_checksum_overwrite():
         State.skipped_overwrites += 1
         filenum += len(files)
-        return 0
+        return
 
     with ChecksumFiles(path, checksum_files) as checksums:
         try:
@@ -1004,11 +1003,11 @@ def plural(number, singular_form, plural_form=""):  # {{{1
 
     if plural_form:
         return plural_form
-    else:
-        if singular_form[-1] == "y":
-            return singular_form[0:-1] + "ies"
 
-        return singular_form + "s"
+    if singular_form[-1] == "y":
+        return singular_form[0:-1] + "ies"
+
+    return singular_form + "s"
 
 
 def main():  # {{{1
@@ -1039,7 +1038,7 @@ def main():  # {{{1
         dirnum = 0
         filenum = 0
         # find out how many characters are needed for the file count column
-        width = max([len(directory[2]) for directory in dirlist])
+        width = max(len(directory[2]) for directory in dirlist)
         width = math.floor(math.log10(width) + 1)
 
         if not ARGS.quiet:
