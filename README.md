@@ -97,7 +97,7 @@ Here are some notable ToDos:
 * installation procedure (setup.py)
 * tests ;-)
     * 2022-01-08: there is now a 'test suite' called `checksumtests.py` which
-        plays through scenarios of directory structures and running dh on then
+        plays through scenarios of directory structures and running dh on them
         with various arguments
 * handle terminal resizes
 * -x option to stop at file system boundaries
