@@ -4,6 +4,8 @@
 dh.py (dirhash) - create and verify checksums for directories recursively.
 """
 
+# pylint: disable=too-many-lines
+
 import argparse
 import hashlib
 import math
@@ -17,7 +19,7 @@ __prog_version__ = "1.4.4"
 CWD = os.getcwd()
 
 
-class Output(object):  # {{{1
+class Output:  # {{{1
     """ Handle printing to the screen and the state of the output. """
 
     # variables {{{2
@@ -318,7 +320,7 @@ ERR = Output.error
 WARN = Output.warn
 
 
-class ChecksumFiles(object):  # {{{1
+class ChecksumFiles:  # {{{1
     """ Encapsulate access to checksum files while processing a directory. """
 
     def __init__(self, path, checksum_files):  # {{{2
@@ -528,7 +530,7 @@ class ChecksumFiles(object):  # {{{1
         return None if entry is None else entry[0] == checksum
 
 
-class State(object):  # {{{1
+class State:  # {{{1
     """ Data class to encapsulate all necessary state variables. """
 
     # number of matching directories (i.e. those that contain files to process)
@@ -576,8 +578,6 @@ class State(object):  # {{{1
 class RecursionException(Exception):  # {{{1
 
     """ Base class for custom exceptions. """
-
-    pass
 
 
 def parse_arguments():  # {{{1
@@ -924,7 +924,7 @@ def process_directory(filenum_width, path, files, checksum_files):  # {{{1
                         checksums.remove_entry(filename)
                     continue
 
-                if filename not in old_sums.keys():
+                if filename not in old_sums:
                     if not ARGS.create:
                         State.not_in_md5 += 1
                         if not ARGS.update:
@@ -1070,7 +1070,7 @@ def main():  # {{{1
             State.not_in_md5 and not ARGS.update,
             State.md5_missing and not ARGS.no_missing_checksums
             ]):
-        exit(1)
+        sys.exit(1)
 
 
 if __name__ == "__main__":  # {{{1
