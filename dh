@@ -162,6 +162,7 @@ class Output:  # {{{1
 
         :param int duration: the overall duration in seconds
         """
+        # pylint: disable=too-many-branches,too-many-statements
 
         # list of lines to print, left and right column as tuple
         stats = []
@@ -324,6 +325,7 @@ WARN = Output.warn
 
 class ChecksumFiles:  # {{{1
     """ Encapsulate access to checksum files while processing a directory. """
+    # pylint: disable=too-many-instance-attributes
 
     def __init__(self, path, checksum_files):  # {{{2
         """
@@ -361,7 +363,8 @@ class ChecksumFiles:  # {{{1
         if not ARGS.create:
             for cspath in self._csfiles:
                 try:
-                    for line in open(cspath):
+                    # pylint: disable=consider-using-with
+                    for line in open(cspath, encoding='utf8'):
                         if not line.strip():
                             continue
                         if len(line) < 34:
@@ -396,7 +399,7 @@ class ChecksumFiles:  # {{{1
                 if filenames:
                     filenames.sort()
                     try:
-                        with open(cspath, "w") as csfile:
+                        with open(cspath, "w", encoding='utf8') as csfile:
                             for entry in filenames:
                                 print(
                                     f"{self._entries[entry][0]} *{entry}",
@@ -418,8 +421,9 @@ class ChecksumFiles:  # {{{1
         try:
             if ARGS.filename != "all" and self._file is None:
                 path = os.path.join(self._path, ARGS.filename)
+                # pylint: disable=consider-using-with
                 self._file = open(
-                    path, "a" if ARGS.update else "w")
+                    path, "a" if ARGS.update else "w", encoding='utf8')
         except OSError as error:
             ERR("'" + path + "'",
                 msg="Could not open checksum file for writing "
@@ -499,7 +503,8 @@ class ChecksumFiles:  # {{{1
                 # path is guaranteed to end with "/" (2. stmt in gather_files)
                 csfpath = self._path + filename + ".md5"
                 # TODO: ask for overwriting here
-                with open(csfpath, "a" if ARGS.update else "w") as csfile:
+                with open(csfpath, "a" if ARGS.update else "w",
+                          encoding='utf8') as csfile:
                     print(f"{checksum} *{filename}", file=csfile)
                 if ARGS.update:
                     # record new checksum item for use in self.__del__
@@ -533,6 +538,7 @@ class ChecksumFiles:  # {{{1
 
 class State:  # {{{1
     """ Data class to encapsulate all necessary state variables. """
+    # pylint: disable=too-few-public-methods
 
     # number of matching directories (i.e. those that contain files to process)
     dircount = 0
@@ -738,6 +744,7 @@ def gather_files(path, dirlist):  # {{{1
     :param list dirlist: list of all directories thus far examined recusively
     :return: the total size of all relevant files in the dir and its subdirs
     """
+    # pylint: disable=too-many-branches
 
     if not os.path.isdir(path):
         return 0
@@ -855,6 +862,7 @@ def process_directory(filenum_width, path, files, checksum_files):  # {{{1
     :param list files: the absolute paths to the files in the directory
     :param checksum_files: the object that encapsulates the checksum files
     """
+    # pylint: disable=too-many-branches,too-many-statements
 
     global dirnum, filenum
     dirnum += 1
@@ -1007,6 +1015,7 @@ def plural(number, singular_form, plural_form=""):  # {{{1
 
 def main():  # {{{1
     """ This is where everything comes together. """
+    # pylint: disable=too-many-branches
 
     # recurse every given directory
     try:
