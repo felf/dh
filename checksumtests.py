@@ -21,6 +21,7 @@ Then it runs dh over the directory. Finally, it compares the content of the
 directory with the expected files.
 """
 
+import argparse
 import datetime
 import os
 import subprocess
@@ -193,6 +194,44 @@ DH_PATH = os.getcwd() + os.path.sep + 'dh'
 os.chdir(TEST_ROOT)
 
 
+def parse_arguments(test_count):
+    """ Parse argument that specifies which test case to run. """
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        'tests', type=str, nargs='*', default=[],
+        help='the test numbers to run. Default: all of them, Molari! ALL OF '
+             'THEM! Use a comma- or space-separated list of items. Each item '
+             'can be a single number or a range (open-ended or closed).')
+    args = parser.parse_args()
+
+    if not args.tests:
+        return range(1, 1 + len(TEST_DATA))
+
+    cases = []
+    for item in args.tests:
+        cases.extend(item.split(','))
+    result = []
+    for num in cases:
+        nums = num.split('-')
+        if len(nums) == 1:
+            try:
+                result.append(int(num))
+            except ValueError:
+                pass
+        else:
+            if nums[0] == '':
+                nums[0] = 1
+            if nums[1] == '':
+                nums[1] = test_count
+            try:
+                result.extend(range(int(nums[0]), 1 + int(nums[1])))
+            except ValueError:
+                pass
+    result.sort()
+    return result
+
+
 def get_dirlist(prefix, output):
     """
     Get a recursive list of files and directories.
@@ -314,28 +353,27 @@ def do_test_case(test_case):
 
 def main():
     """ The main loop. """
-    # for debugging purposes
-    skip_tests = 0
-
-    count = len(TEST_DATA) - skip_tests
-    columns = len(str(count))
+    test_count = len(TEST_DATA)
+    columns = len(str(test_count))
+    case_range = parse_arguments(test_count)
 
     test_number = 0
+    tests_run = 0
 
     for test_data_item in TEST_DATA:
         test_number += 1
-        if skip_tests > 0:
-            skip_tests -= 1
+        if test_number not in case_range:
             continue
 
         testing(columns, test_number, test_data_item[2])
         do_test_case(test_data_item)
+        tests_run += 1
 
     os.rmdir(TEST_ROOT)
 
     print()
     print('Failed test cases:', coloured('31', FAILED, FAILED != 0))
-    print('Passed test cases:', coloured('32', f'{PASSED}/{count}', PASSED == count))
+    print('Passed test cases:', coloured('32', f'{PASSED}/{tests_run}', PASSED == tests_run))
 
 
 if __name__ == "__main__":
