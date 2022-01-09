@@ -674,18 +674,16 @@ def parse_arguments():  # {{{1
     # clean-up of input
     if parsed_args.version:
         print(f"{__prog_name__} version {__prog_version__}")
-        exit(0)
+        sys.exit(0)
     if parsed_args.quiet > 0 and parsed_args.verbose:
-        print("error: quiet and verbose options cannot be mixed.")
-        sys.exit(1)
+        sys.exit("error: quiet and verbose options cannot be mixed.")
     if parsed_args.quiet > 3:
         parsed_args.quiet = 3
     if parsed_args.filename != "all":
         parsed_args.filename = os.path.basename(parsed_args.filename)
     if parsed_args.delete:
         if not any((parsed_args.paths, parsed_args.update)):
-            print("error: -d only goes together with either -p or -u.")
-            exit(1)
+            sys.exit("error: -d only goes together with either -p or -u.")
 
     # use current dir if no dir to process was given
     if not parsed_args.locations:
@@ -1033,7 +1031,7 @@ def main():  # {{{1
 
         if len(dirlist) == 0:
             WARN("Nothing worth checking found.")
-            exit(0)
+            sys.exit(0)
 
         global dirnum, dircount, filenum, filecount
         dircount = len(dirlist)
