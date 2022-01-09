@@ -4,7 +4,7 @@
 dh.py (dirhash) - create and verify checksums for directories recursively.
 """
 
-# pylint: disable=too-many-lines
+# pylint: disable=too-many-lines,consider-using-f-string
 
 import argparse
 import hashlib
@@ -12,6 +12,10 @@ import math
 import os
 import sys
 import time
+
+MIN_VERSION = (3, 6)
+if sys.version_info < (3, 6):
+    sys.exit("A minimum Python version of 3.6 is required.")
 
 __prog_name__ = 'dh.py'
 __prog_version__ = "1.4.4"
@@ -98,11 +102,11 @@ class Output:  # {{{1
 
         result = []
         if hours > 0:
-            result.append("{:0f} {}".format(hours, plural(hours, "hour")))
+            result.append("f{hours:0f} " + plural(hours, "hour"))
         if minutes > 0:
-            result.append("{:0f} {}".format(minutes, plural(minutes, "minute")))
+            result.append("f{minutes:0f} " + plural(minutes, "minute"))
         if seconds > 0 or duration == 0:
-            result.append("{:.0f} {}".format(seconds, plural(round(seconds), "second")))
+            result.append("f{seconds:.0f} " + plural(round(seconds), "second"))
         return ", ".join(result)
 
     @staticmethod
@@ -216,7 +220,7 @@ class Output:  # {{{1
 
             # --paths is fast, we don’t need times and total_hashed_bytes == 0
             if not ARGS.paths:
-                value = "{:3.1f} seconds".format(duration)
+                value = f"{duration:3.1f} seconds"
                 valueadd = []
                 if duration > 60:
                     valueadd.append(Output.hms(duration))
@@ -247,8 +251,7 @@ class Output:  # {{{1
                 labelwidth=labelwidth,
                 colon=":" if stat[1] != "" else "",
                 ), end="")
-            value = "{value:>{valuewidth}}".format(
-                value=stat[1], valuewidth=valuewidth)
+            value = f"{stat[1]:>{valuewidth}}"
             if len(stat) == 3:
                 Output.print((stat[2], value))
             else:
@@ -269,8 +272,7 @@ class Output:  # {{{1
             print()
         else:
             Output.erase_progress_text()
-        Output.last_progress_text = "({} {} of {}) {}".format(
-            what, number, total, msg)
+        Output.last_progress_text = f"({what} {number} of {total}) {msg}"
         terminal_size = os.get_terminal_size()
         print("{text:{length}}\r".format(
             text=Output.last_progress_text,
@@ -368,8 +370,7 @@ class ChecksumFiles:  # {{{1
                         self._entries[filename] = (md5, cspath)
                 except OSError as error:
                     ERR("'" + cspath + "'",
-                        msg="Could not read checksum file ({}): ".format(
-                            error.args[1]))
+                        msg=f"Could not read checksum file ({error.args[1]}): ")
 
     def __enter__(self):  # {{{2
         """ Make the class usable with the "with" statement - entry point. """
@@ -397,12 +398,12 @@ class ChecksumFiles:  # {{{1
                     try:
                         with open(cspath, "w") as csfile:
                             for entry in filenames:
-                                print("{} *{}".format(
-                                    self._entries[entry][0], entry),
+                                print(
+                                    f"{self._entries[entry][0]} *{entry}",
                                     file=csfile)
                     except KeyboardInterrupt:
-                        ERR("\nWARNING! Interrupted while rewriting '{}'\n"
-                            "Data loss is possible.".format(cspath))
+                        ERR("\nWARNING! Interrupted while rewriting "
+                            f"'{cspath}'\nData loss is possible.")
                         raise
                     except OSError as error:
                         ERR(cspath,
@@ -421,8 +422,8 @@ class ChecksumFiles:  # {{{1
                     path, "a" if ARGS.update else "w")
         except OSError as error:
             ERR("'" + path + "'",
-                msg="Could not open checksum file for writing ({}): ".format(
-                    error.args[1]))
+                msg="Could not open checksum file for writing "
+                    f"({error.args[1]}): ")
         return self._file
 
     def delete_checksum_files(self):  # {{{2
@@ -499,13 +500,13 @@ class ChecksumFiles:  # {{{1
                 csfpath = self._path + filename + ".md5"
                 # TODO: ask for overwriting here
                 with open(csfpath, "a" if ARGS.update else "w") as csfile:
-                    print("{} *{}".format(checksum, filename), file=csfile)
+                    print(f"{checksum} *{filename}", file=csfile)
                 if ARGS.update:
                     # record new checksum item for use in self.__del__
                     self._entries[filename] = (checksum, csfpath)
             else:
                 print(
-                    "{} *{}".format(checksum, filename),
+                    f"{checksum} *{filename}",
                     file=self._get_checksum_file_handle())
                 csfpath = self._path + ARGS.filename
                 if ARGS.update and self._csfiles:
@@ -513,8 +514,8 @@ class ChecksumFiles:  # {{{1
                     self._updated_csfiles.add(csfpath)
                 self._modified = True
         except OSError as error:
-            ERR(csfpath, msg="Could not write to checksum file ({}): ".format(
-                error.args[1]))
+            ERR(csfpath,
+                msg=f"Could not write to checksum file ({error.args[1]}): ")
 
     def check(self, filename, checksum):  # {{{2
         """
@@ -666,7 +667,7 @@ def parse_arguments():  # {{{1
 
     # clean-up of input
     if parsed_args.version:
-        print("{} version {}".format(__prog_name__, __prog_version__))
+        print(f"{__prog_name__} version {__prog_version__}")
         exit(0)
     if parsed_args.quiet > 0 and parsed_args.verbose:
         print("error: quiet and verbose options cannot be mixed.")
@@ -978,8 +979,7 @@ def human_readable_size(value):  # {{{1
     while value >= 1024 and power <= 4:
         value = value / 1024
         power = power + 1
-    return "{:0.1f} {}".format(
-        value, ["B", "kiB", "MiB", "GiB", "TiB"][power])
+    return f"{value:0.1f} {['B', 'kiB', 'MiB', 'GiB', 'TiB'][power]}"
 
 
 def plural(number, singular_form, plural_form=""):  # {{{1
