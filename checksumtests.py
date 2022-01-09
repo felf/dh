@@ -199,6 +199,10 @@ def parse_arguments(test_count):
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        '-w', action='store_true', dest='wait',
+        help='wait for input between test setup and executing dh for manual'
+             'examination')
+    parser.add_argument(
         'tests', type=str, nargs='*', default=[],
         help='the test numbers to run. Default: all of them, Molari! ALL OF '
              'THEM! Use a comma- or space-separated list of items. Each item '
@@ -206,7 +210,7 @@ def parse_arguments(test_count):
     args = parser.parse_args()
 
     if not args.tests:
-        return range(1, 1 + len(TEST_DATA))
+        return (args.wait, range(1, 1 + len(TEST_DATA)))
 
     cases = []
     for item in args.tests:
@@ -229,7 +233,7 @@ def parse_arguments(test_count):
             except ValueError:
                 pass
     result.sort()
-    return result
+    return (args.wait, result)
 
 
 def get_dirlist(prefix, output):
@@ -286,7 +290,7 @@ def clean_up(path):
             os.unlink(path + entry)
 
 
-def do_test_case(test_case):
+def do_test_case(test_case, wait):
     """ Perform all actions pertaining to a single test case.
 
     :param test_case: tuple with test data (see definition of TEST_CASE)
@@ -308,6 +312,9 @@ def do_test_case(test_case):
             newtime = datetime.datetime.timestamp(datetime.datetime.now())
             newtime = int((newtime + entry[4] * 3600) * 1000000000)
             os.utime(filename, ns=(newtime, newtime))
+
+    if wait:
+        input()
 
     # when: run dh on the test data
     completed = subprocess.run(
@@ -355,10 +362,13 @@ def main():
     """ The main loop. """
     test_count = len(TEST_DATA)
     columns = len(str(test_count))
-    case_range = parse_arguments(test_count)
+    do_wait, case_range = parse_arguments(test_count)
 
     test_number = 0
     tests_run = 0
+
+    if do_wait:
+        print(f"Test directory is '{TEST_ROOT}'")
 
     for test_data_item in TEST_DATA:
         test_number += 1
@@ -366,7 +376,7 @@ def main():
             continue
 
         testing(columns, test_number, test_data_item[2])
-        do_test_case(test_data_item)
+        do_test_case(test_data_item, do_wait)
         tests_run += 1
 
     os.rmdir(TEST_ROOT)
