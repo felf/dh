@@ -22,11 +22,6 @@ __prog_version__ = "1.4.4"
 
 CWD = os.getcwd()
 
-DIRNUM = 0
-FILENUM = 0
-DIRCOUNT = 0
-FILECOUNT = 0
-
 
 class Output:  # {{{1
     """ Handle printing to the screen and the state of the output. """
@@ -174,7 +169,7 @@ class Output:  # {{{1
 
         stats.append(("DIRECTORIES:", ""))
 
-        stats.append(("  processed", State.dircount))
+        stats.append(("  processed", State.dirnum))
 
         if ARGS.skip > 0:
             stats.append(("  after skipping", ARGS.skip))
@@ -545,8 +540,14 @@ class State:  # {{{1
     """ Data class to encapsulate all necessary state variables. """
     # pylint: disable=too-few-public-methods
 
-    # number of matching directories (i.e. those that contain files to process)
+    # the number of the currently processed directory
+    dirnum = 0
+    # the total number of relevant directories
     dircount = 0
+    # the number of the currently processed file
+    filenum = 0
+    # the total number of files to process
+    filecount = 0
     # number of matching directories to skip at the beginning
     skip = 0
     # number of matching directories after which to exit
@@ -711,10 +712,9 @@ def do_hash(path):  # {{{1
 
     # thanks: http://stackoverflow.com/questions/1131220/get-md5-hash-of-big-\
     # files-in-python
-    global FILENUM
-    FILENUM += 1
+    State.filenum += 1
     if ARGS.verbose:
-        Output.progress("file", FILENUM, FILECOUNT, path)
+        Output.progress("file", State.filenum, State.filecount, path)
 
     md5 = hashlib.md5()
     with open(path, "rb") as infile:
@@ -866,8 +866,8 @@ def process_directory(filenum_width, path, files, checksum_files):  # {{{1
     """
     # pylint: disable=too-many-branches,too-many-statements
 
-    global DIRNUM, FILENUM
-    DIRNUM += 1
+    State.dirnum += 1
+
     # progress output for this directory {{{2
     # want to verify checksums, but no checksum file available
     if not ARGS.create and not ARGS.update and not checksum_files:
@@ -876,34 +876,35 @@ def process_directory(filenum_width, path, files, checksum_files):  # {{{1
                 "." + path[len(CWD):] if path.startswith(CWD) else path),
                 msg="No checksum file: ")
         State.md5_missing += 1
-        FILENUM += len(files)
+        State.filenum += len(files)
         return
 
     if State.skip_all and ARGS.create and checksum_files:
         Output.progress(
-            "dir", DIRNUM, DIRCOUNT, "Skipping overwrite in {}".format(
+            "dir", State.dirnum, State.dircount,
+            "Skipping overwrite in {}".format(
                 "." + path[len(CWD):] if path.startswith(CWD) else path))
         State.skipped_overwrites += 1
-        FILENUM += len(files)
+        State.filenum += len(files)
         return
 
     # full output mode: print number of files and name of directory
     if ARGS.quiet == 0:
         Output.progress(
-            "dir", DIRNUM, DIRCOUNT,
+            "dir", State.dirnum, State.dircount,
             "Processing {:>{}} files in {}".format(
                 len(files), filenum_width,
                 "." + path[len(CWD):] if path.startswith(CWD) else path))
     # reduced output: only print a dot for each directory
     elif ARGS.quiet == 1:
-        Output.progress("dir", DIRNUM, DIRCOUNT)
+        Output.progress("dir", State.dirnum, State.dircount)
 
     # the checksum file will be overwritten -> ask how to proceed {{{2
     # TODO: -F all (right now, it asks only for the dir's first file)
     if checksum_files and ARGS.create and os.path.isfile(
             path + checksum_files[0]) and not ask_checksum_overwrite():
         State.skipped_overwrites += 1
-        FILENUM += len(files)
+        State.filenum += len(files)
         return
 
     with ChecksumFiles(path, checksum_files) as checksums:
@@ -1037,9 +1038,8 @@ def main():  # {{{1
             WARN("Nothing worth checking found.")
             sys.exit(0)
 
-        global DIRCOUNT, FILECOUNT
-        DIRCOUNT = len(dirlist)
-        FILECOUNT = sum([len(directory[2]) for directory in dirlist])
+        State.dircount = len(dirlist)
+        State.filecount = sum([len(directory[2]) for directory in dirlist])
         # find out how many characters are needed for the file count column
         width = max(len(directory[2]) for directory in dirlist)
         width = math.floor(math.log10(width) + 1)
@@ -1048,18 +1048,17 @@ def main():  # {{{1
             if ARGS.paths or ARGS.update:
                 OUT("Checking checksum consistency for "
                     "{} {} in {} {}".format(
-                        FILECOUNT, plural(FILECOUNT, "file"),
-                        DIRCOUNT, plural(DIRCOUNT, "directory")))
+                        State.filecount, plural(State.filecount, "file"),
+                        State.dircount, plural(State.dircount, "directory")))
             else:
                 OUT("Processing {} {} in {} {} ({})".format(
-                    FILECOUNT, plural(FILECOUNT, "file"),
-                    DIRCOUNT, plural(DIRCOUNT, "directory"),
+                    State.filecount, plural(State.filecount, "file"),
+                    State.dircount, plural(State.dircount, "directory"),
                     human_readable_size(total_size)))
 
         starttime = time.time()
         for directory in dirlist:
             process_directory(width, directory[0], directory[2], directory[3])
-            State.dircount += 1
     except KeyboardInterrupt:
         Output.clear_progress_text()
         if ARGS.create:
