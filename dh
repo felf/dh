@@ -917,6 +917,7 @@ def main():  # {{{1
 
     # recurse every given directory
     try:
+        total_size = 0
         dirlist = []
         starttime = time.time()
         if not ARGS.quiet:
@@ -926,7 +927,7 @@ def main():  # {{{1
             if not os.path.exists(location):
                 ERR("'" + location + "'", msg=">> does not exist: ")
             else:
-                total_size = gather_files(location, dirlist)
+                total_size += gather_files(location, dirlist)
 
         if len(dirlist) == 0:
             WARN("Nothing worth checking found.")
