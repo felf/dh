@@ -187,9 +187,6 @@ TEST_DATA = (
 
 PASSED = 0
 FAILED = 0
-# for debugging purposes
-SKIP_TESTS = 0
-COUNT = len(TEST_DATA) - SKIP_TESTS
 
 TEST_ROOT = tempfile.mkdtemp(prefix='dhtest-') + os.path.sep
 DH_PATH = os.getcwd() + os.path.sep + 'dh'
@@ -214,9 +211,9 @@ def get_dirlist(prefix, output):
             output.append(prefix + entry)
 
 
-def testing(text):
+def testing(width, number, text):
     """ Write progress string. """
-    print(f'{text}...', end='')
+    print(f'{number:{width}}: {text}...', end='')
 
 
 def coloured(colour, value, do_colour=True):
@@ -256,8 +253,7 @@ def do_test_case(test_case):
     :param test_case: tuple with test data (see definition of TEST_CASE)
     """
 
-    args, exit_code, comment, entries = test_case
-    testing(comment)
+    args, exit_code, _, entries = test_case
 
     # given: create input directory structure
     for entry in entries:
@@ -316,16 +312,31 @@ def do_test_case(test_case):
     return True
 
 
-if __name__ == "__main__":
+def main():
+    """ The main loop. """
+    # for debugging purposes
+    skip_tests = 0
+
+    count = len(TEST_DATA) - skip_tests
+    columns = len(str(count))
+
+    test_number = 0
+
     for test_data_item in TEST_DATA:
-        if SKIP_TESTS > 0:
-            SKIP_TESTS -= 1
+        test_number += 1
+        if skip_tests > 0:
+            skip_tests -= 1
             continue
 
+        testing(columns, test_number, test_data_item[2])
         do_test_case(test_data_item)
 
     os.rmdir(TEST_ROOT)
 
     print()
     print('Failed test cases:', coloured('31', FAILED, FAILED != 0))
-    print('Passed test cases:', coloured('32', f'{PASSED}/{COUNT}', PASSED == COUNT))
+    print('Passed test cases:', coloured('32', f'{PASSED}/{count}', PASSED == count))
+
+
+if __name__ == "__main__":
+    main()
