@@ -50,7 +50,12 @@ class Output(object):  # {{{1
 
     @staticmethod
     def ask(msg):  # {{{2
-        """ Show the user a question, get input and return it. """
+        """
+        Show the user a question, get input and return it.
+
+        :param str msg: the text to display
+        :return: the entered text
+        """
 
         Output.clear_line()
         return input(msg)
@@ -77,7 +82,12 @@ class Output(object):  # {{{1
 
     @staticmethod
     def hms(duration):
-        """ convert number of seconds to hours-minutes-seconds representation """
+        """
+        convert number of seconds to human-readable format
+
+        :param int duration: the duration in seconds
+        :return: the representation in hours-minutes-seconds
+        """
 
         hours = duration // 3600
         seconds = duration % 3600
@@ -95,7 +105,11 @@ class Output(object):  # {{{1
 
     @staticmethod
     def print_separator(width):  # {{{2
-        """ Print the stats table headline (only if there is output above). """
+        """
+        Print the stats table headline (only if there is output above).
+
+        :param int width: the overall width of the table
+        """
 
         if Output.progress_with_newline:
             if Output.output_shown:
@@ -137,7 +151,11 @@ class Output(object):  # {{{1
 
     @staticmethod
     def print_results(duration):  # {{{2
-        """ Put all the statistics into a nice tabular format to read. """
+        """
+        Put all the statistics into a nice tabular format to read.
+
+        :param int duration: the overall duration in seconds
+        """
 
         # list of lines to print, left and right column as tuple
         stats = []
@@ -236,7 +254,14 @@ class Output(object):  # {{{1
 
     @staticmethod
     def progress(what, number, total, msg=""):  # {{{2
-        """ Print a progress indicator with two numbers and a possible msg. """
+        """
+        Print a progress indicator with progress numbers and a possible msg.
+
+        :param str what: what it is about (e.g. 'dir')
+        :param int number: the running number of the item
+        :param int total: the total count of items
+        :param str message: text to print
+        """
 
         if Output.progress_with_newline and Output.progress_last:
             print()
@@ -297,7 +322,14 @@ class ChecksumFiles(object):  # {{{1
     """ Encapsulate access to checksum files while processing a directory. """
 
     def __init__(self, path, checksum_files):  # {{{2
-        # the directory
+        """
+        Constructor.
+
+        :param str path: the directory where the checksum files are stored
+        :param list checksum_files: filenames of checksum files, based on path
+        """
+
+        # the directory in which this checksum file is located
         self._path = path
         # a dict of all the directory's checksum files to read or write
         # key: full path to file, value: the file's current mtime
@@ -403,8 +435,12 @@ class ChecksumFiles(object):  # {{{1
         return self._entries
 
     def file_is_not_newer(self, filename):  # {{{2
-        """ Compare given file's mtime with mtime of its checksum file.
-        Return true if file is not newer than checksum file. """
+        """
+        Compare a file's mtime with mtime of its checksum file.
+
+        :param str filename: the file to check
+        :return: True if the file is not newer than the checksum file
+        """
 
         return os.path.getmtime(filename) < self._csfiles[
             self._entries[filename.removeprefix(self._path)][1]]
@@ -415,7 +451,11 @@ class ChecksumFiles(object):  # {{{1
         return self._modified
 
     def remove_entry(self, filename):  # {{{2
-        """ If update mode detects a dead checksum entry, delete it here. """
+        """
+        If update mode detects a dead checksum entry, delete it here.
+
+        :param str filename: the file to remove
+        """
 
         # were there already some entries removed from that file?
         csfile = self._entries[filename][1]
@@ -429,7 +469,14 @@ class ChecksumFiles(object):  # {{{1
         self._updated_csfiles.add(csfile)
 
     def verify_hash(self, filename, checksum):  # {{{2
-        """ Look for the given hash/file in existing checksum files. """
+        """
+        Look for the given hash/file in existing checksum files.
+
+        :param str filename: the file to hash
+        :param str checksum: the file's calculated checksum
+        :return: None if file is not listed in current checksum files,
+                 True/False whether the checksum matches that in existing file
+        """
 
         old_sum = self._entries.get(filename)[0]
         if old_sum is None:
@@ -437,7 +484,12 @@ class ChecksumFiles(object):  # {{{1
         return old_sum == checksum
 
     def write_hash(self, filename, checksum):  # {{{2
-        """ Add a new hash to the checksum file. """
+        """
+        Add a new hash to the checksum file.
+
+        :param str filename: the path of the file, based on checksum file path
+        :param str checksum: the hash of the file
+        """
 
         try:
             if ARGS.filename == 'all':
@@ -463,10 +515,14 @@ class ChecksumFiles(object):  # {{{1
                 error.args[1]))
 
     def check(self, filename, checksum):  # {{{2
-        """ Check the given data against existing checksums.
+        """
+        Check the given data against existing checksums.
 
-        Return value: None if file is not listed, True/False depending on
-        whether checksum is correct. """
+        :param str filename: the path of the file
+        :param str checksums: the hash just calculated
+        :return: None if file is not listed,
+                 True/False depending on whether checksum is correct
+        """
 
         entry = self._entries.get(filename)
         return None if entry is None else entry[0] == checksum
@@ -525,7 +581,11 @@ class RecursionException(Exception):  # {{{1
 
 
 def parse_arguments():  # {{{1
-    """ Parse commandline arguments and return the argparse object. """
+    """
+    Parse commandline arguments and return the argparse object.
+
+    :return: the result of the argument parser
+    """
 
     parser = argparse.ArgumentParser(
         description='Recursively create and verify md5 checksums in '
@@ -633,7 +693,12 @@ State.set_from_arguments(ARGS)
 
 
 def do_hash(path):  # {{{1
-    """ Read the given file chunk by chunk and fead that to the digest. """
+    """
+    Read the given file chunk by chunk and fead that to the digest.
+
+    :param str path: the absolute path to the file
+    :return: the calculated hash
+    """
 
     # thanks: http://stackoverflow.com/questions/1131220/get-md5-hash-of-big-\
     # files-in-python
@@ -662,11 +727,15 @@ def gather_files(path, dirlist):  # {{{1
     contain relevant files will not be listed, even if any of their
     subdirectories actually do contain such files.
 
-    The resulting list looks like this:
+    The resulting dirlist looks like this:
     [
         ("/", 12345, ["/frotz", 12345], []),
         ("/A/B/", 96, [("/A/B/foo", 32), ("/A/B/bar", 64)], ["Checksums.md5"])
     ]
+
+    :param str path: absolute path to the directory to examine
+    :param list dirlist: list of all directories thus far examined recusively
+    :return: the total size of all relevant files in the dir and its subdirs
     """
 
     if not os.path.isdir(path):
@@ -728,9 +797,11 @@ def gather_files(path, dirlist):  # {{{1
 
 
 def ask_checksum_overwrite():  # {{{1
-    """ A checksum file would be overwritten. Ask how to proceed.
+    """
+    A checksum file would be overwritten. Ask how to proceed.
 
-    Return True if to proceed with the current directory. """
+    :return: True if to proceed with the current directory.
+    """
 
     if State.skip_all:
         return False
@@ -758,9 +829,11 @@ def ask_checksum_overwrite():  # {{{1
 
 
 def ask_delete_incomplete_checksum():  # {{{1
-    """ Hashing a dir was interrupted, the file is incomplete. Ask what to do.
+    """
+    Hashing a dir was interrupted, the file is incomplete. Ask what to do.
 
-    Return True if the file shall be deleted. """
+    :return: True if the file shall be deleted.
+    """
 
     # put a newline behind the dots
     while True:
@@ -773,7 +846,14 @@ def ask_delete_incomplete_checksum():  # {{{1
 
 
 def process_directory(filenum_width, path, files, checksum_files):  # {{{1
-    """ Read checksum files and compare hashes in one directory. """
+    """
+    Read checksum files and compare hashes in one directory.
+
+    :param int filenum_width: the max. number of digits of the number of files
+    :param str path: absolute path to the relevant directory
+    :param list files: the absolute paths to the files in the directory
+    :param checksum_files: the object that encapsulates the checksum files
+    """
 
     global dirnum, filenum
     dirnum += 1
@@ -887,7 +967,12 @@ def process_directory(filenum_width, path, files, checksum_files):  # {{{1
 
 
 def human_readable_size(value):  # {{{1
-    """ Express the given number of bytes as a binary exponential unit. """
+    """
+    Express the given number of bytes as a binary exponential unit.
+
+    :param int value: the number to format
+    :return: string representation with number and binary unit
+    """
 
     power = 0
     while value >= 1024 and power <= 4:
@@ -898,7 +983,15 @@ def human_readable_size(value):  # {{{1
 
 
 def plural(number, singular_form, plural_form=""):  # {{{1
-    """ Return the singular or plural form of a string depending on number. """
+    """
+    Return the singular or plural form of a string depending on number.
+
+    :param int number: the number for which to format the string
+    :param str singular_form: the string to use for a single item
+    :param str plural_form: the string to use for multiple or no items
+                            if empty and singular_form ends in y, use -ies
+    :return: the appropriate form
+    """
 
     if number == 1:
         return singular_form
