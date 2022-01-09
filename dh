@@ -772,7 +772,7 @@ def ask_delete_incomplete_checksum():  # {{{1
     return answer.lower() == "y"
 
 
-def process_files(filenum_width, path, files, checksum_files):  # {{{1
+def process_directory(filenum_width, path, files, checksum_files):  # {{{1
     """ Read checksum files and compare hashes in one directory. """
 
     global dirnum, filenum
@@ -956,7 +956,7 @@ def main():  # {{{1
 
         starttime = time.time()
         for directory in dirlist:
-            process_files(width, directory[0], directory[2], directory[3])
+            process_directory(width, directory[0], directory[2], directory[3])
             State.dircount += 1
     except KeyboardInterrupt:
         Output.clear_progress_text()
