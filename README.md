@@ -11,7 +11,7 @@ single file. It is written in Python 3.
 
 Configuration and installation
 ------------------------------
-Nothing fancy to do, dh is a simple one-file program. You can copy it whever
+Nothing fancy to do, dh is a simple one-file program. You can copy it wherever
 you want, such as ~/bin, /usr/local/bin etc.
 
 How to use dh
