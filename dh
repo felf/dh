@@ -22,6 +22,11 @@ __prog_version__ = "1.4.4"
 
 CWD = os.getcwd()
 
+DIRNUM = 0
+FILENUM = 0
+DIRCOUNT = 0
+FILECOUNT = 0
+
 
 class Output:  # {{{1
     """ Handle printing to the screen and the state of the output. """
@@ -706,10 +711,10 @@ def do_hash(path):  # {{{1
 
     # thanks: http://stackoverflow.com/questions/1131220/get-md5-hash-of-big-\
     # files-in-python
-    global filenum, filecount
-    filenum += 1
+    global FILENUM
+    FILENUM += 1
     if ARGS.verbose:
-        Output.progress("file", filenum, filecount, path)
+        Output.progress("file", FILENUM, FILECOUNT, path)
 
     md5 = hashlib.md5()
     with open(path, "rb") as infile:
@@ -861,8 +866,8 @@ def process_directory(filenum_width, path, files, checksum_files):  # {{{1
     """
     # pylint: disable=too-many-branches,too-many-statements
 
-    global dirnum, filenum
-    dirnum += 1
+    global DIRNUM, FILENUM
+    DIRNUM += 1
     # progress output for this directory {{{2
     # want to verify checksums, but no checksum file available
     if not ARGS.create and not ARGS.update and not checksum_files:
@@ -871,34 +876,34 @@ def process_directory(filenum_width, path, files, checksum_files):  # {{{1
                 "." + path[len(CWD):] if path.startswith(CWD) else path),
                 msg="No checksum file: ")
         State.md5_missing += 1
-        filenum += len(files)
+        FILENUM += len(files)
         return
 
     if State.skip_all and ARGS.create and checksum_files:
         Output.progress(
-            "dir", dirnum, dircount, "Skipping overwrite in {}".format(
+            "dir", DIRNUM, DIRCOUNT, "Skipping overwrite in {}".format(
                 "." + path[len(CWD):] if path.startswith(CWD) else path))
         State.skipped_overwrites += 1
-        filenum += len(files)
+        FILENUM += len(files)
         return
 
     # full output mode: print number of files and name of directory
     if ARGS.quiet == 0:
         Output.progress(
-            "dir", dirnum, dircount,
+            "dir", DIRNUM, DIRCOUNT,
             "Processing {:>{}} files in {}".format(
                 len(files), filenum_width,
                 "." + path[len(CWD):] if path.startswith(CWD) else path))
     # reduced output: only print a dot for each directory
     elif ARGS.quiet == 1:
-        Output.progress("dir", dirnum, dircount)
+        Output.progress("dir", DIRNUM, DIRCOUNT)
 
     # the checksum file will be overwritten -> ask how to proceed {{{2
     # TODO: -F all (right now, it asks only for the dir's first file)
     if checksum_files and ARGS.create and os.path.isfile(
             path + checksum_files[0]) and not ask_checksum_overwrite():
         State.skipped_overwrites += 1
-        filenum += len(files)
+        FILENUM += len(files)
         return
 
     with ChecksumFiles(path, checksum_files) as checksums:
@@ -1032,11 +1037,9 @@ def main():  # {{{1
             WARN("Nothing worth checking found.")
             sys.exit(0)
 
-        global dirnum, dircount, filenum, filecount
-        dircount = len(dirlist)
-        filecount = sum([len(directory[2]) for directory in dirlist])
-        dirnum = 0
-        filenum = 0
+        global DIRCOUNT, FILECOUNT
+        DIRCOUNT = len(dirlist)
+        FILECOUNT = sum([len(directory[2]) for directory in dirlist])
         # find out how many characters are needed for the file count column
         width = max(len(directory[2]) for directory in dirlist)
         width = math.floor(math.log10(width) + 1)
@@ -1045,12 +1048,12 @@ def main():  # {{{1
             if ARGS.paths or ARGS.update:
                 OUT("Checking checksum consistency for "
                     "{} {} in {} {}".format(
-                        filecount, plural(filecount, "file"),
-                        dircount, plural(dircount, "directory")))
+                        FILECOUNT, plural(FILECOUNT, "file"),
+                        DIRCOUNT, plural(DIRCOUNT, "directory")))
             else:
                 OUT("Processing {} {} in {} {} ({})".format(
-                    filecount, plural(filecount, "file"),
-                    dircount, plural(dircount, "directory"),
+                    FILECOUNT, plural(FILECOUNT, "file"),
+                    DIRCOUNT, plural(DIRCOUNT, "directory"),
                     human_readable_size(total_size)))
 
         starttime = time.time()
