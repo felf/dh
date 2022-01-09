@@ -2,7 +2,7 @@ dh – dirhash
 ============
 
 https://github.com/felf/dh
-Copyright © 2013–2021 Frank Steinmetzger
+Copyright © 2013–2022 Frank Steinmetzger
 
 Synopsis
 --------
@@ -39,12 +39,14 @@ warns when it is about to overwrite one.
 
 In update mode, dh first does a quick paths-mode check, but it will also fix
 any errors it finds:
+
 * if a file is listed in the checksum file, but does not exist, the entry is
   removed from the checksum file
 * if it is listed, but its modification time is newer, then it is rehashed
 * if a file is not listed in the checksum file, its hash gets added
 
 Dh has a range of options to alter its behaviour:
+
 * the expected file name of checksum files can be modified (the default is
   Checksums.md5)
 * it is possible to write one checksum file per input file
@@ -88,11 +90,15 @@ your own fix. ;-)
 TODOs
 -----
 Here are some notable ToDos:
+
 * Currently, dh only supports md5. (The original name of the tool was
   album-md5). This (c|sh)hould be extended to other hash algorithms.
 * manpage
 * installation procedure (setup.py)
 * tests ;-)
+    * 2022-01-08: there is now a 'test suite' called `checksumtests.py` which
+        plays through scenarios of directory structures and running dh on then
+        with various arguments
 * handle terminal resizes
 * -x option to stop at file system boundaries
 * The class that handles terminal output seems a mess to me. It is the
