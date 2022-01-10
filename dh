@@ -13,8 +13,7 @@ import os
 import sys
 import time
 
-MIN_VERSION = (3, 6)
-if sys.version_info < (3, 6):
+if sys.version_info < (3, 6): # for fstrings
     sys.exit("A minimum Python version of 3.6 is required.")
 
 __prog_name__ = 'dh.py'
