@@ -1080,17 +1080,17 @@ def main():  # {{{1
                     human_readable_size(total_size)))
 
         starttime = time.time()
-        for directory in dirlist:
+        for dir_path, _, dir_files, dir_csfiles in dirlist:
             State.dirnum += 1
-            if not directory_check(directory[0], directory[2], directory[3]):
+            if not directory_check(dir_path, dir_files, dir_csfiles):
                 continue
 
             if not directory_progress(
-                    width, directory[0], directory[2], directory[3]):
+                    width, dir_path, dir_files, dir_csfiles):
                 continue
 
-            with ChecksumFiles(directory[0], directory[3]) as checksums:
-                directory_hash(directory[0], directory[2], checksums)
+            with ChecksumFiles(dir_path, dir_csfiles) as checksums:
+                directory_hash(dir_path, dir_files, checksums)
 
     except KeyboardInterrupt:
         Output.clear_progress_text()
