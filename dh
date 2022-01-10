@@ -854,20 +854,17 @@ def ask_delete_incomplete_checksum():  # {{{1
     return answer.lower() == "y"
 
 
-def process_directory(filenum_width, path, files, checksum_files):  # {{{1
+def directory_check(path, files, checksum_files):  # {{{1
     """
-    Read checksum files and compare hashes in one directory.
+    Part 1 of directory hashing:
+    Check whether conditions are met, print a messages if necessary.
 
-    :param int filenum_width: the max. number of digits of the number of files
     :param str path: absolute path to the relevant directory
     :param list files: the absolute paths to the files in the directory
     :param checksum_files: the object that encapsulates the checksum files
+    :return: True if conditions are met, False otherwise
     """
-    # pylint: disable=too-many-branches,too-many-statements
 
-    State.dirnum += 1
-
-    # progress output for this directory {{{2
     # want to verify checksums, but no checksum file available
     if not ARGS.create and not ARGS.update and not checksum_files:
         if ARGS.quiet < 3 and not ARGS.no_missing_checksums:
@@ -876,7 +873,7 @@ def process_directory(filenum_width, path, files, checksum_files):  # {{{1
                 msg="No checksum file: ")
         State.md5_missing += 1
         State.filenum += len(files)
-        return
+        return False
 
     if State.skip_all and ARGS.create and checksum_files:
         Output.progress(
@@ -885,7 +882,21 @@ def process_directory(filenum_width, path, files, checksum_files):  # {{{1
                 "." + path[len(CWD):] if path.startswith(CWD) else path))
         State.skipped_overwrites += 1
         State.filenum += len(files)
-        return
+        return False
+
+    return True
+
+
+def directory_progress(filenum_width, path, files, checksum_files):  # {{{1
+    """
+    Part 2 of directory hashing:
+    Print progress message, then ask for overwriting checksum file, if needed.
+
+    :param str path: absolute path to the relevant directory
+    :param list files: the absolute paths to the files in the directory
+    :param checksum_files: the object that encapsulates the checksum files
+    :return: True if user answers to not overwrite (hashing shall not run)
+    """
 
     # full output mode: print number of files and name of directory
     if ARGS.quiet == 0:
@@ -904,7 +915,21 @@ def process_directory(filenum_width, path, files, checksum_files):  # {{{1
             path + checksum_files[0]) and not ask_checksum_overwrite():
         State.skipped_overwrites += 1
         State.filenum += len(files)
-        return
+        return False
+
+    return True
+
+
+def directory_hash(path, files, checksum_files):  # {{{1
+    """
+    Part 3 of directory hashing:
+    The actual hashing and passing the result to checksum handler.
+
+    :param str path: absolute path to the relevant directory
+    :param list files: the absolute paths to the files in the directory
+    :param checksum_files: the object that encapsulates the checksum files
+    """
+    # pylint: disable=too-many-branches
 
     with ChecksumFiles(path, checksum_files) as checksums:
         try:
@@ -1057,7 +1082,16 @@ def main():  # {{{1
 
         starttime = time.time()
         for directory in dirlist:
-            process_directory(width, directory[0], directory[2], directory[3])
+            State.dirnum += 1
+            if not directory_check(directory[0], directory[2], directory[3]):
+                continue
+
+            if not directory_progress(
+                    width, directory[0], directory[2], directory[3]):
+                continue
+
+            directory_hash(directory[0], directory[2], directory[3])
+
     except KeyboardInterrupt:
         Output.clear_progress_text()
         if ARGS.create:
