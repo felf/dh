@@ -258,11 +258,12 @@ class Output:  # {{{1
                 print(value)
 
     @staticmethod
-    def progress(what, number, total, msg=""):  # {{{2
+    def progress(what, width, number, total, msg=""):  # {{{2
         """
         Print a progress indicator with progress numbers and a possible msg.
 
         :param str what: what it is about (e.g. 'dir')
+        :param int width: how many chars to reserve for number output
         :param int number: the running number of the item
         :param int total: the total count of items
         :param str message: text to print
@@ -272,7 +273,8 @@ class Output:  # {{{1
             print()
         else:
             Output.erase_progress_text()
-        Output.last_progress_text = f"({what} {number} of {total}) {msg}"
+        Output.last_progress_text = \
+                f"({what} {number:{width}} of {total}) {msg}"
         terminal_size = os.get_terminal_size()
         print("{text:{length}}\r".format(
             text=Output.last_progress_text,
@@ -570,6 +572,18 @@ class State:  # {{{1
     # number of bytes processed during hasing
     total_hashed_bytes = 0
 
+    # some dynamic output parameters:
+    # the total number of directories which contain viable files
+    dircount = 0
+    # the total number of viable files accross all directories
+    filecount = 0
+    # the required width for dircount
+    dir_width = 0
+    # the required width for filecount
+    file_width = 0
+    # the required width for the maximum number of files in an individual dir
+    dirfiles_width = 0
+
     # answer flags for the question about already existing md5 files
     # overwrite all following md5 collisions
     overwrite_all = False
@@ -713,7 +727,8 @@ def do_hash(path):  # {{{1
     # files-in-python
     State.filenum += 1
     if ARGS.verbose:
-        Output.progress("file", State.filenum, State.filecount, path)
+        Output.progress(
+            "file", State.file_width, State.filenum, State.filecount, path)
 
     md5 = hashlib.md5()
     with open(path, "rb") as infile:
@@ -877,7 +892,7 @@ def directory_check(path, files, checksum_files):  # {{{1
 
     if State.skip_all and ARGS.create and checksum_files:
         Output.progress(
-            "dir", State.dirnum, State.dircount,
+            "dir", State.dir_width, State.dirnum, State.dircount,
             "Skipping overwrite in {}".format(
                 "." + path[len(CWD):] if path.startswith(CWD) else path))
         State.skipped_overwrites += 1
@@ -887,7 +902,7 @@ def directory_check(path, files, checksum_files):  # {{{1
     return True
 
 
-def directory_progress(filenum_width, path, files, checksum_files):  # {{{1
+def directory_progress(path, files, checksum_files):  # {{{1
     """
     Part 2 of directory hashing:
     Print progress message, then ask for overwriting checksum file, if needed.
@@ -901,13 +916,13 @@ def directory_progress(filenum_width, path, files, checksum_files):  # {{{1
     # full output mode: print number of files and name of directory
     if ARGS.quiet == 0:
         Output.progress(
-            "dir", State.dirnum, State.dircount,
+            "dir", State.dir_width, State.dirnum, State.dircount,
             "Processing {:>{}} files in {}".format(
-                len(files), filenum_width,
+                len(files), State.dirfiles_width,
                 "." + path[len(CWD):] if path.startswith(CWD) else path))
     # reduced output: only print a dot for each directory
     elif ARGS.quiet == 1:
-        Output.progress("dir", State.dirnum, State.dircount)
+        Output.progress("dir", State.dir_width, State.dirnum, State.dircount)
 
     # the checksum file will be overwritten -> ask how to proceed {{{2
     # TODO: -F all (right now, it asks only for the dir's first file)
@@ -1063,9 +1078,11 @@ def main():  # {{{1
 
         State.dircount = len(dirlist)
         State.filecount = sum([len(directory[2]) for directory in dirlist])
+        max_files_per_dir = max(len(directory[2]) for directory in dirlist)
         # find out how many characters are needed for the file count column
-        width = max(len(directory[2]) for directory in dirlist)
-        width = math.floor(math.log10(width) + 1)
+        State.dir_width = math.floor(math.log10(State.dircount) + 1)
+        State.file_width = math.floor(math.log10(State.filecount) + 1)
+        State.dirfiles_width = math.floor(math.log10(max_files_per_dir) + 1)
 
         if not ARGS.quiet:
             if ARGS.paths or ARGS.update:
@@ -1085,8 +1102,7 @@ def main():  # {{{1
             if not directory_check(dir_path, dir_files, dir_csfiles):
                 continue
 
-            if not directory_progress(
-                    width, dir_path, dir_files, dir_csfiles):
+            if not directory_progress(dir_path, dir_files, dir_csfiles):
                 continue
 
             with ChecksumFiles(dir_path, dir_csfiles) as checksums:
