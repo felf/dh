@@ -323,7 +323,7 @@ def do_test_case(test_case, output, wait):
             os.utime(filename, ns=(newtime, newtime))
 
     if wait:
-        input('\nWaiting to run dh ...')
+        input(f"\nWaiting to run {' '.join([DH_PATH, '-qqq'] + args)} ...")
 
     # when: run dh on the test data
     completed = subprocess.run(
