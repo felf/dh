@@ -21,14 +21,14 @@ Then it runs dh over the directory. Finally, it compares the content of the
 directory with the expected files.
 """
 
+# pylint: disable=line-too-long
+
 import argparse
 import datetime
 import os
 import subprocess
 import sys
 import tempfile
-
-# pylint: disable=line-too-long
 
 if sys.version_info[0] < 3 or sys.version_info[1] < 5:
     print('Need python 3.5 or up.', file=sys.stderr)
@@ -79,7 +79,7 @@ TEST_DATA = (
         )
     ),
     (
-        ['-au'], 0, "simple update with one file without checksum file and one ignored dotfile", (
+        ['-a', '-u'], 0, "simple update with one file without checksum file and one ignored dotfile", (
             (True, True, '.foo.txt', 'foo\n'),
             (True, True, 'foo.txt', 'foo\n'),
             (False, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *.foo.txt\nd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
@@ -108,7 +108,7 @@ TEST_DATA = (
         )
     ),
     (
-        ['-du'], 1, "update with one file, two checksum entries and deletion of unreferenced entry", (
+        ['-u', '-d'], 1, "update with one file, two checksum entries and deletion of unreferenced entry", (
             (True, True, 'foo.txt', 'foo\n', +1),
             (True, False, 'Checksums.md5', 'ffffffffffffffffffffffffffffffff *foo.txt\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *bar.txt\n'),
             (False, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
@@ -124,7 +124,7 @@ TEST_DATA = (
         )
     ),
     (
-        ['-cf'], 0, "creation with subdir and with file in root", (
+        ['-c', '-f'], 0, "creation with subdir and with file in root", (
             (True, True, 'root.txt', 'foo\n'),
             (True, True, 'subdir/', None),
             (True, True, 'subdir/foo.txt', 'foo\n'),
