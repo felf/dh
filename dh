@@ -790,8 +790,7 @@ def gather_files(path, dirlist):  # {{{1
         md5files = [ARGS.filename] if ARGS.filename in files else []
     # and remove them from the files to be checked
     for md5file in md5files:
-        if md5file in files:
-            files.remove(md5file)
+        files.remove(md5file)
 
     # gather relevant list of files in this directory {{{2
     if files and (not dirs or ARGS.force):
