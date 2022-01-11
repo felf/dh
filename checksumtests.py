@@ -108,7 +108,7 @@ TEST_DATA = (
         )
     ),
     (
-        ['-u', '-d'], 1, "update with one file, two checksum entries and deletion of unreferenced entry", (
+        ['-u', '-d'], 0, "update with one file, two checksum entries and deletion of unreferenced entry", (
             (True, True, 'foo.txt', 'foo\n', +1),
             (True, False, 'Checksums.md5', 'ffffffffffffffffffffffffffffffff *foo.txt\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *bar.txt\n'),
             (False, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
