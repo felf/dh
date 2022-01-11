@@ -44,7 +44,7 @@ TEST_DATA = (
         )
     ),
     (
-        [], 1, "simple check with missing checksum file", (
+        [], 2, "simple check with missing checksum file", (
             (True, True, 'foo.txt', 'foo\n'),
         )
     ),
@@ -60,7 +60,7 @@ TEST_DATA = (
         )
     ),
     (
-        [], 1, "simple check with wrong checksum", (
+        [], 2, "simple check with wrong checksum", (
             (True, True, 'foo.txt', 'foo\n'),
             (True, True, 'Checksums.md5', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *foo.txt\n'),
         )
@@ -101,7 +101,7 @@ TEST_DATA = (
     ),
 
     (
-        ['-u'], 1, "update with one file and two checksum entries", (
+        ['-u'], 2, "update with one file and two checksum entries", (
             (True, True, 'foo.txt', 'foo\n', +1),
             (True, False, 'Checksums.md5', 'ffffffffffffffffffffffffffffffff *foo.txt\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *bar.txt\n'),
             (False, True, 'Checksums.md5', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *bar.txt\nd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
@@ -157,8 +157,8 @@ TEST_DATA = (
     ),
 
     (
-        # return code 1, because subdir has no checksum file
-        ['-f'], 1, "check with subdir and one checksum file at root, none in subdir", (
+        # return code 2, because subdir has no checksum file
+        ['-f'], 2, "check with subdir and one checksum file at root, none in subdir", (
             (True, True, 'subdir/', None),
             (True, True, 'subdir/foo.txt', 'foo\n'),
             (True, True, 'foo.txt', 'foo\n'),

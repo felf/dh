@@ -1127,7 +1127,7 @@ def main():  # {{{1
             State.not_in_md5 and not ARGS.update,
             State.md5_missing and not ARGS.no_missing_checksums
             ]):
-        sys.exit(1)
+        sys.exit(2)
 
 
 if __name__ == "__main__":  # {{{1
