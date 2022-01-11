@@ -314,7 +314,7 @@ def do_test_case(test_case, wait):
             os.utime(filename, ns=(newtime, newtime))
 
     if wait:
-        input()
+        input('\nWaiting to run dh ...')
 
     # when: run dh on the test data
     completed = subprocess.run(
@@ -324,7 +324,6 @@ def do_test_case(test_case, wait):
 
     # then: gather the result and compare with expected content
     if exit_code != completed.returncode:
-        clean_up(TEST_ROOT)
         failed(f'exit code. Expected={exit_code}, Actual={completed.returncode}')
         return False
 
@@ -336,23 +335,18 @@ def do_test_case(test_case, wait):
 
     # compare the result with the expected data
     if set(expected.keys()) != set(result):
-        clean_up(TEST_ROOT)
         failed('directory content')
         return False
 
-    # check file content and clean up in the same loop
+    # check file content
     result.reverse()
     for filename in result:
-        if filename.endswith(os.path.sep):
-            os.rmdir(filename)
-        else:
+        if not filename.endswith(os.path.sep):
             with open(filename, encoding='utf8') as file:
                 content = file.read()
                 if content != expected[filename]:
-                    clean_up(TEST_ROOT)
                     failed(f'content of file {filename}')
                     return False
-            os.unlink(filename)
 
     passed()
     return True
@@ -377,6 +371,9 @@ def main():
 
         testing(columns, test_number, test_data_item[2])
         do_test_case(test_data_item, do_wait)
+        if do_wait:
+            input('Waiting to clean up ...')
+        clean_up(TEST_ROOT)
         tests_run += 1
 
     os.rmdir(TEST_ROOT)
