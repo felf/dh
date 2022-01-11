@@ -101,6 +101,7 @@ TEST_DATA = (
     ),
 
     (
+        # return code 2, because the missing entry is not deleted
         ['-u'], 2, "update with one file and two checksum entries", (
             (True, True, 'foo.txt', 'foo\n', +1),
             (True, False, 'Checksums.md5', 'ffffffffffffffffffffffffffffffff *foo.txt\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *bar.txt\n'),
@@ -108,6 +109,7 @@ TEST_DATA = (
         )
     ),
     (
+        # same test, but now with --delete to remove the unneeded entry
         ['-u', '-d'], 0, "update with one file, two checksum entries and deletion of unreferenced entry", (
             (True, True, 'foo.txt', 'foo\n', +1),
             (True, False, 'Checksums.md5', 'ffffffffffffffffffffffffffffffff *foo.txt\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *bar.txt\n'),
