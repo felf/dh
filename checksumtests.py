@@ -199,6 +199,9 @@ def parse_arguments(test_count):
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        '-o', action='store_true', dest='output',
+        help='show output if dh')
+    parser.add_argument(
         '-w', action='store_true', dest='wait',
         help='wait for input between test setup and executing dh for manual'
              'examination')
@@ -210,7 +213,7 @@ def parse_arguments(test_count):
     args = parser.parse_args()
 
     if not args.tests:
-        return (args.wait, range(1, 1 + len(TEST_DATA)))
+        return (args.output, args.wait, range(1, 1 + len(TEST_DATA)))
 
     cases = []
     for item in args.tests:
@@ -233,7 +236,7 @@ def parse_arguments(test_count):
             except ValueError:
                 pass
     result.sort()
-    return (args.wait, result)
+    return (args.output, args.wait, result)
 
 
 def get_dirlist(prefix, output):
@@ -266,11 +269,15 @@ def coloured(colour, value, do_colour=True):
     return str(value)
 
 
-def failed(reason):
+def failed(reason, output, stdout):
     """ Write progress string. """
     global FAILED  # pylint: disable=global-statement
     print(f' \033[1;31mFAILED\033[0m: {reason}')
     FAILED += 1
+
+    if output:
+        print('Output of dh:')
+        print(stdout)
 
 
 def passed():
@@ -290,7 +297,7 @@ def clean_up(path):
             os.unlink(path + entry)
 
 
-def do_test_case(test_case, wait):
+def do_test_case(test_case, output, wait):
     """ Perform all actions pertaining to a single test case.
 
     :param test_case: tuple with test data (see definition of TEST_CASE)
@@ -319,12 +326,13 @@ def do_test_case(test_case, wait):
     # when: run dh on the test data
     completed = subprocess.run(
         [DH_PATH, '-qqq'] + args,
-        capture_output=True,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
         check=False, text=True)
 
     # then: gather the result and compare with expected content
     if exit_code != completed.returncode:
-        failed(f'exit code. Expected={exit_code}, Actual={completed.returncode}')
+        failed(f'exit code. Expected={exit_code}, Actual={completed.returncode}',
+               output, completed.stdout)
         return False
 
     # dictionary mapping filename to file content
@@ -335,7 +343,7 @@ def do_test_case(test_case, wait):
 
     # compare the result with the expected data
     if set(expected.keys()) != set(result):
-        failed('directory content')
+        failed('directory content', output, completed.stdout)
         return False
 
     # check file content
@@ -345,7 +353,8 @@ def do_test_case(test_case, wait):
             with open(filename, encoding='utf8') as file:
                 content = file.read()
                 if content != expected[filename]:
-                    failed(f'content of file {filename}')
+                    failed(f'content of file {filename}',
+                            output, completed.stdout)
                     return False
 
     passed()
@@ -356,7 +365,7 @@ def main():
     """ The main loop. """
     test_count = len(TEST_DATA)
     columns = len(str(test_count))
-    do_wait, case_range = parse_arguments(test_count)
+    do_output, do_wait, case_range = parse_arguments(test_count)
 
     test_number = 0
     tests_run = 0
@@ -370,7 +379,7 @@ def main():
             continue
 
         testing(columns, test_number, test_data_item[2])
-        do_test_case(test_data_item, do_wait)
+        do_test_case(test_data_item, do_output, do_wait)
         if do_wait:
             input('Waiting to clean up ...')
         clean_up(TEST_ROOT)
