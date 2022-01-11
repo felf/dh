@@ -774,7 +774,7 @@ def gather_files(path, dirlist):  # {{{1
     dirs = []
     files = []
     for item in content:
-        fullpath = path + os.path.sep + item
+        fullpath = path + item
         if os.path.islink(fullpath) and not ARGS.follow_links:
             continue
         if os.path.isdir(fullpath):
