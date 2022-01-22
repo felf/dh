@@ -38,9 +38,10 @@ class Output:  # {{{1
     isatty = False
 
     @staticmethod
-    def init():  # {{{2
+    def init(args):  # {{{2
         """ Initialise state variables. """
         Output.isatty = sys.stdout.isatty()
+        Output.use_colour = not args.no_color
 
     @staticmethod
     def colorstring(color):  # {{{2
@@ -56,9 +57,11 @@ class Output:  # {{{1
             'cyan':   '36',
             'white':  '37'
         }
-        return "\033[{};{}m".format(
-            "0" if color[0].islower() else "1",
-            colors.get(color.lower(), "0"))
+        if Output.use_colour:
+            return "\033[{};{}m".format(
+                "0" if color[0].islower() else "1",
+                colors.get(color.lower(), "0"))
+        return ''
 
     @staticmethod
     def ask(msg):  # {{{2
@@ -727,6 +730,7 @@ def parse_arguments():  # {{{1
 
 ARGS = parse_arguments()
 State.set_from_arguments(ARGS)
+Output.init(ARGS)
 
 
 def do_hash(path):  # {{{1
