@@ -34,6 +34,13 @@ class Output:  # {{{1
     progress_with_newline = False
     # the text last shown as progress message
     last_progress_text = ""
+    # whether to show interactive and dynamic output
+    isatty = False
+
+    @staticmethod
+    def init():  # {{{2
+        """ Initialise state variables. """
+        Output.isatty = sys.stdout.isatty()
 
     @staticmethod
     def colorstring(color):  # {{{2
@@ -62,8 +69,10 @@ class Output:  # {{{1
         :return: the entered text
         """
 
-        Output.clear_line()
-        return input(msg)
+        if Output.isatty:
+            Output.clear_line()
+            return input(msg)
+        raise Exception('Terminal is not interactive.')
 
     @staticmethod
     def clear_line():  # {{{2
@@ -116,11 +125,12 @@ class Output:  # {{{1
         :param int width: the overall width of the table
         """
 
-        if Output.progress_with_newline:
-            if Output.output_shown:
-                Output.clear_line()
-        else:
-            Output.erase_progress_text()
+        if Output.isatty:
+            if Output.progress_with_newline:
+                if Output.output_shown:
+                    Output.clear_line()
+            else:
+                Output.erase_progress_text()
         if Output.output_shown:
             print("-" * width)
 
@@ -145,10 +155,11 @@ class Output:  # {{{1
     def print_line(*what, file=sys.stdout):  # {{{2
         """ Output the given message onto a new line. """
 
-        if Output.progress_with_newline:
-            Output.clear_line()
-        else:
-            Output.erase_progress_text()
+        if Output.isatty:
+            if Output.progress_with_newline:
+                Output.clear_line()
+            else:
+                Output.erase_progress_text()
         Output.print(*what, file=file)
         Output.progress_last = False
         if Output.last_progress_text:
@@ -268,6 +279,9 @@ class Output:  # {{{1
         :param int total: the total count of items
         :param str message: text to print
         """
+
+        if not Output.isatty:
+            return
 
         if Output.progress_with_newline and Output.progress_last:
             print()
