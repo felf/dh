@@ -60,6 +60,14 @@ TEST_DATA = (
         )
     ),
     (
+        [], 0, "simple check with correct checksum", (
+            (True, True, 'subdir/', None),
+            (True, True, 'subdir/subsubdir/', None),
+            (True, True, 'subdir/subsubdir/foo.txt', 'foo\n'),
+            (True, True, 'subdir/subsubdir/Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
+        )
+    ),
+    (
         [], 2, "simple check with wrong checksum", (
             (True, True, 'foo.txt', 'foo\n'),
             (True, True, 'Checksums.md5', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *foo.txt\n'),
