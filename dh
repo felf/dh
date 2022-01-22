@@ -227,7 +227,7 @@ class Output:  # {{{1
             if not ARGS.paths:
                 stats.append(("  hashed bytes",
                               0 if State.total_hashed_bytes == 0 else
-                              "{} ({})".format(
+                              "{}{}".format(
                                   State.total_hashed_bytes,
                                   human_readable_size(State.total_hashed_bytes)
                               )))
@@ -1047,7 +1047,9 @@ def human_readable_size(value):  # {{{1
     while value >= 1024 and power <= 4:
         value = value / 1024
         power = power + 1
-    return f"{value:0.1f} {['B', 'kiB', 'MiB', 'GiB', 'TiB'][power]}"
+    if power == 0:
+        return ''
+    return f" ({value:0.1f} {['B', 'kiB', 'MiB', 'GiB', 'TiB'][power]})"
 
 
 def plural(number, singular_form, plural_form=""):  # {{{1
@@ -1110,7 +1112,7 @@ def main():  # {{{1
                         State.filecount, plural(State.filecount, "file"),
                         State.dircount, plural(State.dircount, "directory")))
             else:
-                OUT("Processing {} {} in {} {} ({})".format(
+                OUT("Processing {} {} in {} {}{}...".format(
                     State.filecount, plural(State.filecount, "file"),
                     State.dircount, plural(State.dircount, "directory"),
                     human_readable_size(total_size)))
