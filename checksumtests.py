@@ -252,7 +252,7 @@ def get_dirlist(prefix, output):
 
     dirlist = os.listdir(prefix if prefix else '.')
     for entry in dirlist:
-        if os.path.isdir(entry):
+        if os.path.isdir(prefix + entry):
             output.append(prefix + entry + os.path.sep)
             get_dirlist(output[-1], output)
         else:
@@ -292,22 +292,20 @@ def passed():
 def clean_up(path):
     """ Delete all test data. """
     for entry in os.listdir(path):
-        if os.path.isdir(entry):
+        if os.path.isdir(path + entry):
             clean_up(path + entry + os.path.sep)
             os.rmdir(path + entry)
         else:
             os.unlink(path + entry)
 
 
-def do_test_case(test_case, output, wait):
-    """ Perform all actions pertaining to a single test case.
+def set_up_dirs(test_case):
+    """ Create the file tree specific to a test cast.
 
     :param test_case: tuple with test data (see definition of TEST_CASE)
     """
 
-    args, exit_code, _, entries = test_case
-
-    # given: create input directory structure
+    _, _, _, entries = test_case
     for entry in entries:
         before, _, filename, content = entry[:4]
         if not before:
@@ -321,6 +319,15 @@ def do_test_case(test_case, output, wait):
             newtime = datetime.datetime.timestamp(datetime.datetime.now())
             newtime = int((newtime + entry[4] * 3600) * 1000000000)
             os.utime(filename, ns=(newtime, newtime))
+
+
+def do_test_case(test_case, output, wait):
+    """ Perform all actions pertaining to a single test case.
+
+    :param test_case: tuple with test data (see definition of TEST_CASE)
+    """
+
+    args, exit_code, _, entries = test_case
 
     if wait:
         input(f"\nWaiting to run {' '.join([DH_PATH, '-qqq'] + args)} ...")
@@ -381,6 +388,9 @@ def main():
             continue
 
         testing(columns, test_number, test_data_item[2])
+        # given
+        set_up_dirs(test_data_item)
+        # when and then
         do_test_case(test_data_item, do_output, do_wait)
         if do_wait:
             input('Waiting to clean up ...')
