@@ -27,6 +27,7 @@ import argparse
 import datetime
 import os
 import subprocess
+import re
 import sys
 import tempfile
 
@@ -34,64 +35,86 @@ if sys.version_info[0] < 3 or sys.version_info[1] < 5:
     print('Need python 3.5 or up.', file=sys.stderr)
     sys.exit(1)
 
+DH_OUTPUT_KEYS = [
+        '  processed',
+        '  with no checksum file',
+        '  listed in checksum file',
+        '  listed, but not found',
+        '  not in checksum file',
+        '  hashed',
+        '  checks passed',
+        '  checks failed',
+        '  hashed bytes',
+        ]
+
 TEST_DATA = (
     (
-        [], 0, "empty directory", ()
+        [], 0, "empty directory", (),
+        (None, None, None, None, None, None, None, None, None,)
     ),
     (
         [], 0, "empty directory and subdirectory", (
             (True, True, 'subdir/', None),
-        )
+        ),
+        (None, None, None, None, None, None, None, None, None,)
     ),
     (
         [], 2, "simple check with missing checksum file", (
             (True, True, 'foo.txt', 'foo\n'),
-        )
+        ),
+        (1, 1, 0, None, None, 0, 0, 0, 0,)
     ),
     (
         ['--no-missing-checksums'], 0, "simple check with missing checksum file, but ignoring that", (
             (True, True, 'foo.txt', 'foo\n'),
-        )
+        ),
+        (1, 1, 0, None, None, 0, 0, 0, 0,)
     ),
     (
-        [], 0, "simple check with correct checksum", (
+        [], 0, "simple check with correct checksum and depth=1", (
             (True, True, 'foo.txt', 'foo\n'),
             (True, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
-        )
+        ),
+        (1, None, 1, None, None, 1, 1, 0, 4,)
     ),
     (
-        [], 0, "simple check with correct checksum", (
+        [], 0, "simple check with correct checksum and depth=2", (
             (True, True, 'subdir/', None),
             (True, True, 'subdir/subsubdir/', None),
             (True, True, 'subdir/subsubdir/foo.txt', 'foo\n'),
             (True, True, 'subdir/subsubdir/Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
-        )
+        ),
+        (1, None, 1, None, None, 1, 1, 0, 4,)
     ),
     (
         [], 2, "simple check with wrong checksum", (
             (True, True, 'foo.txt', 'foo\n'),
             (True, True, 'Checksums.md5', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *foo.txt\n'),
-        )
+        ),
+        (1, None, 1, None, None, 1, 0, 1, 4,)
     ),
     (
         ['-c'], 0, "simple creation with one file", (
             (True, True, 'foo.txt', 'foo\n'),
             (False, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
-        )
+        ),
+        (1, None, None, None, None, 1, None, None, 4,)
     ),
     (
         ['-u'], 0, "simple update with one file without checksum file and one ignored dotfile", (
             (True, True, '.foo.txt', 'foo\n'),
             (True, True, 'foo.txt', 'foo\n'),
             (False, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
-        )
+        ),
+        (1, None, 0, None, 1, 1, None, None, 4,)
     ),
     (
         ['-a', '-u'], 0, "simple update with one file without checksum file and one ignored dotfile", (
             (True, True, '.foo.txt', 'foo\n'),
             (True, True, 'foo.txt', 'foo\n'),
             (False, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *.foo.txt\nd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
-        )
+        ),
+        (1, None, 0, None, 2, 2, None, None, 8,)
     ),
     (
         ['-u'], 0, "simple update with one file older than checksum file", (
@@ -99,13 +122,15 @@ TEST_DATA = (
             (True, False, 'Checksums.md5', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *foo.txt\n'),
             (False, True, 'Checksums.md5', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *foo.txt\n'),
         ),
+        (1, None, 1, None, None, 0, None, None, 0)
     ),
     (
         ['-u'], 0, "simple update with one file newer than checksum file", (
             (True, True, 'foo.txt', 'foo\n', +1),
             (True, False, 'Checksums.md5', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *foo.txt\n'),
             (False, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
-        )
+        ),
+        (1, None, 1, None, None, 1, None, None, 4)
     ),
 
     (
@@ -114,7 +139,8 @@ TEST_DATA = (
             (True, True, 'foo.txt', 'foo\n', +1),
             (True, False, 'Checksums.md5', 'ffffffffffffffffffffffffffffffff *foo.txt\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *bar.txt\n'),
             (False, True, 'Checksums.md5', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *bar.txt\nd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
-        )
+        ),
+        (1, None, 1, 1, None, 1, None, None, 4,)
     ),
     (
         # same test, but now with --delete to remove the unneeded entry
@@ -122,7 +148,8 @@ TEST_DATA = (
             (True, True, 'foo.txt', 'foo\n', +1),
             (True, False, 'Checksums.md5', 'ffffffffffffffffffffffffffffffff *foo.txt\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *bar.txt\n'),
             (False, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
-        )
+        ),
+        (1, None, 1, 1, None, 1, None, None, 4,)
     ),
 
     (
@@ -131,7 +158,8 @@ TEST_DATA = (
             (True, True, 'subdir/', None),
             (True, True, 'subdir/foo.txt', 'foo\n'),
             (False, True, 'subdir/Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
-        )
+        ),
+        (1, None, None, None, None, 1, None, None, 4,)
     ),
     (
         ['-c', '-f'], 0, "creation with subdir and with file in root", (
@@ -140,7 +168,8 @@ TEST_DATA = (
             (True, True, 'subdir/foo.txt', 'foo\n'),
             (False, True, 'subdir/Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
             (False, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *root.txt\n'),
-        )
+        ),
+        (2, None, None, None, None, 2, None, None, 8,)
     ),
 
     (
@@ -149,6 +178,7 @@ TEST_DATA = (
             (True, True, 'bar.txt', 'foo\n'),
             (False, True, 'test.md5', 'd3b07384d113edec49eaa6238ad5ff00 *bar.txt\nd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
         ),
+        (1, None, 0, None, 2, 2, None, None, 8,)
     ),
     (
         ['-u', '-F', 'all'], 0, "simple update with individual checksum files", (
@@ -156,7 +186,8 @@ TEST_DATA = (
             (True, True, 'bar.txt', 'foo\n'),
             (False, True, 'foo.txt.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
             (False, True, 'bar.txt.md5', 'd3b07384d113edec49eaa6238ad5ff00 *bar.txt\n'),
-        )
+        ),
+        (1, None, 0, None, 2, 2, None, None, 8,)
     ),
     (
         ['-u', '-F', 'test.md5'], 0, "simple update with different checksum file name", (
@@ -164,6 +195,7 @@ TEST_DATA = (
             (True, True, 'bar.txt', 'foo\n'),
             (False, True, 'test.md5', 'd3b07384d113edec49eaa6238ad5ff00 *bar.txt\nd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
         ),
+        (1, None, 0, None, 2, 2, None, None, 8,)
     ),
 
     (
@@ -173,7 +205,8 @@ TEST_DATA = (
             (True, True, 'subdir/foo.txt', 'foo\n'),
             (True, True, 'foo.txt', 'foo\n'),
             (True, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\nd3b07384d113edec49eaa6238ad5ff00 *subdir/foo.txt\n'),
-        )
+        ),
+        (2, 1, 2, None, None, 2, 2, 0, 8,)
     ),
     (
         # now return code 0, because the missing checksum file is ignored
@@ -182,7 +215,8 @@ TEST_DATA = (
             (True, True, 'subdir/foo.txt', 'foo\n'),
             (True, True, 'foo.txt', 'foo\n'),
             (True, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\nd3b07384d113edec49eaa6238ad5ff00 *subdir/foo.txt\n'),
-        )
+        ),
+        (2, 1, 2, None, None, 2, 2, 0, 8,)
     ),
     (
         # return code 0 despite globally incomplete checksum, because for its own dir, it is complete (see option -s, to be implemented)
@@ -191,7 +225,8 @@ TEST_DATA = (
             (True, True, 'subdir/foo.txt', 'foo\n'),
             (True, True, 'foo.txt', 'foo\n'),
             (True, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\n'),
-        )
+        ),
+        (2, 1, 1, None, None, 1, 1, 0, 4,)
     ),
 
 )
@@ -290,11 +325,15 @@ def failed(reason, output, stdout):
         print(stdout)
 
 
-def passed():
+def passed(output, stdout):
     """ Write progress string. """
     global PASSED  # pylint: disable=global-statement
     print(' \033[1;32mPASSED\033[0m')
     PASSED += 1
+
+    if output:
+        print('Output of dh:')
+        print(stdout)
 
 
 def clean_up(path):
@@ -313,7 +352,7 @@ def set_up_dirs(test_case):
     :param test_case: tuple with test data (see definition of TEST_CASE)
     """
 
-    _, _, _, entries = test_case
+    _, _, _, entries, _ = test_case
     for entry in entries:
         before, _, filename, content = entry[:4]
         if not before:
@@ -329,13 +368,39 @@ def set_up_dirs(test_case):
             os.utime(filename, ns=(newtime, newtime))
 
 
+def check_summary(dh_output, expected):
+    """ Check whether dh outputs the expected values at the end
+
+    :param str dh_output: stdout of the teset run
+    :param list expected: the expected values (see DH_OUTPUT_KEYS)
+    """
+
+    result = {key: None for key in DH_OUTPUT_KEYS}
+    errorlist = []
+
+    for line in dh_output.split('\n'):
+        # remove colour control sequences
+        line = re.sub('\033\[[01];[0-9]+m', '', line)
+
+        for pattern in DH_OUTPUT_KEYS:
+            rem = re.match(f'^{pattern} *: *([0-9]+)( .*)?$', line)
+            if rem:
+                result[pattern] = int(rem.group(1))
+
+    for key, exp in zip(DH_OUTPUT_KEYS, expected, strict=True):
+        if result[key] != exp:
+            errorlist.append(f'{key}: expected={exp}, actual={result[key]}')
+
+    return errorlist
+
+
 def do_test_case(test_case, output, wait):
     """ Perform all actions pertaining to a single test case.
 
     :param test_case: tuple with test data (see definition of TEST_CASE)
     """
 
-    args, exit_code, _, entries = test_case
+    args, exit_code, _, entries, summary = test_case
 
     if wait:
         input(f"\nWaiting to run {' '.join([DH_PATH, '-qqq'] + args)} ...")
@@ -350,6 +415,11 @@ def do_test_case(test_case, output, wait):
     if exit_code != completed.returncode:
         failed(f'exit code. Expected={exit_code}, Actual={completed.returncode}',
                output, completed.stdout)
+        return False
+
+    result = check_summary(completed.stdout, summary)
+    if result:
+        failed('summary\n' + '\n'.join(result) + '\n', True, completed.stdout)
         return False
 
     # dictionary mapping filename to file content
@@ -374,7 +444,7 @@ def do_test_case(test_case, output, wait):
                             output, completed.stdout)
                     return False
 
-    passed()
+    passed(output, completed.stdout)
     return True
 
 
