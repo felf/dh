@@ -113,11 +113,11 @@ class Output:  # {{{1
 
         result = []
         if hours > 0:
-            result.append("f{hours:0f} " + plural(hours, "hour"))
+            result.append(f"{hours:0f} " + plural(hours, "hour"))
         if minutes > 0:
-            result.append("f{minutes:0f} " + plural(minutes, "minute"))
+            result.append(f"{minutes:0f} " + plural(minutes, "minute"))
         if seconds > 0 or duration == 0:
-            result.append("f{seconds:.0f} " + plural(round(seconds), "second"))
+            result.append(f"{seconds:.0f} " + plural(round(seconds), "second"))
         return ", ".join(result)
 
     @staticmethod
