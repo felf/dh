@@ -245,11 +245,10 @@ def parse_arguments(test_count):
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '-o', action='store_true', dest='output',
-        help='show output if dh')
+        help='show output of dh')
     parser.add_argument(
         '-w', action='store_true', dest='wait',
-        help='wait for input between test setup and executing dh for manual'
-             'examination')
+        help='wait for user confirmation after test setup for manual check')
     parser.add_argument(
         'tests', type=str, nargs='*', default=[],
         help='the test numbers to run. Default: all of them, Molari! ALL OF '
