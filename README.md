@@ -100,7 +100,6 @@ Here are some notable ToDos:
         plays through scenarios of directory structures and running dh on them
         with various arguments
 * handle terminal resizes
-* -x option to stop at file system boundaries
 * The class that handles terminal output seems a mess to me. It is the
   product of a refactoring that separated hashing and printing, but became
   rather convoluted in the process with lots of state variables.

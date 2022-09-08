@@ -667,6 +667,9 @@ def parse_arguments():  # {{{1
     group.add_argument(
         '-l', '--follow-links', action='store_true',
         help='follow symlinks instead of ignoring them')
+    group.add_argument(
+        '-x', '--one-filesystem', action='store_true',
+        help='do not cross filesystem boundaries')
 
     group = parser.add_argument_group(title="checksum file options")
     group.add_argument(
@@ -780,10 +783,12 @@ def gather_files(path, dirlist):  # {{{1
     """
     # pylint: disable=too-many-branches
 
-    if not os.path.isdir(path):
-        return 0
     if not path.endswith(os.path.sep):
         path += os.path.sep
+    if not os.path.isdir(path):
+        return 0
+    if ARGS.one_filesystem:
+        dev_inode = os.stat(path).st_dev
 
     totalsize = 0
 
@@ -796,6 +801,9 @@ def gather_files(path, dirlist):  # {{{1
         if os.path.islink(fullpath) and not ARGS.follow_links:
             continue
         if os.path.isdir(fullpath):
+            if ARGS.one_filesystem:
+                if dev_inode != os.stat(fullpath).st_dev:
+                    continue
             dirs.append(item)
         elif os.path.isfile(path + os.path.sep + item):
             files.append(item)
