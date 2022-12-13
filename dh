@@ -13,7 +13,7 @@ import os
 import sys
 import time
 
-if sys.version_info < (3, 6): # for fstrings
+if sys.version_info < (3, 6):  # for fstrings
     sys.exit("A minimum Python version of 3.6 is required.")
 
 __prog_name__ = 'dh.py'
@@ -291,7 +291,7 @@ class Output:  # {{{1
         else:
             Output.erase_progress_text()
         Output.last_progress_text = \
-                f"({what} {number:{width}} of {total}) {msg}"
+            f"({what} {number:{width}} of {total}) {msg}"
         terminal_size = os.get_terminal_size()
         print("{text:{length}}\r".format(
             text=Output.last_progress_text,
