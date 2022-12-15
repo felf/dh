@@ -590,13 +590,9 @@ class State:  # {{{1
     total_hashed_bytes = 0
 
     # some dynamic output parameters:
-    # the total number of directories which contain viable files
-    dircount = 0
-    # the total number of viable files accross all directories
-    filecount = 0
-    # the required width for dircount
+    # the required character width for dircount
     dir_width = 0
-    # the required width for filecount
+    # the required character width for filecount
     file_width = 0
     # the required width for the maximum number of files in an individual dir
     dirfiles_width = 0
