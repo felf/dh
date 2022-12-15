@@ -1087,7 +1087,6 @@ def main():  # {{{1
     try:
         total_size = 0
         dirlist = []
-        starttime = time.time()
         if not ARGS.quiet:
             OUT("Gathering list of files...")
         for location in ARGS.locations:
@@ -1141,10 +1140,9 @@ def main():  # {{{1
             WARN("\nCheck aborted.")
     except RecursionException:
         pass
-    finally:
-        endtime = time.time()
-        duration = endtime - starttime
 
+    endtime = time.time()
+    duration = endtime - starttime
     Output.print_results(duration)
 
     if any([
