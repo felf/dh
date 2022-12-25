@@ -379,7 +379,7 @@ def check_summary(dh_output, expected):
 
     for line in dh_output.split('\n'):
         # remove colour control sequences
-        line = re.sub('\033\[[01];[0-9]+m', '', line)
+        line = re.sub(r'\033\[[01];[0-9]+m', '', line)
 
         for pattern in DH_OUTPUT_KEYS:
             rem = re.match(f'^{pattern} *: *([0-9]+)( .*)?$', line)
@@ -440,7 +440,7 @@ def do_test_case(test_case, output, wait):
                 content = file.read()
                 if content != expected[filename]:
                     failed(f'content of file {filename}',
-                            output, completed.stdout)
+                           output, completed.stdout)
                     return False
 
     passed(output, completed.stdout)
