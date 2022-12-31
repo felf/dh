@@ -819,13 +819,11 @@ def gather_files(path, dirlist):  # {{{1
         # only process if this dir is not excluded through constraint arguments
         if State.skip == 0 and State.limit != 0:
             files.sort()
-            filelist = []
             for item in files:
                 fullpath = path + os.path.sep + item
                 size = os.path.getsize(fullpath)
                 totalsize += size
-                filelist.append(item)
-            dirlist.append((path, totalsize, filelist, md5files))
+            dirlist.append((path, totalsize, files, md5files))
             if State.limit != -1:
                 State.limit -= 1
         else:
