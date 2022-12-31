@@ -229,6 +229,75 @@ TEST_DATA = (
         (2, 1, 1, None, None, 1, 1, 0, 4,)
     ),
 
+    (
+        ['-s'], 0, "check in subdir mode", (
+            (True, True, 'subdir/', None),
+            (True, True, 'subdir/foo.txt', 'foo\n'),
+            (True, True, 'foo.txt', 'foo\n'),
+            (True, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\nd3b07384d113edec49eaa6238ad5ff00 *subdir/foo.txt\n'),
+        ),
+        (2, None, 2, None, None, 2, 2, 0, 8,)
+    ),
+    (
+        ['-s'], 2, "check in subdir mode with missing file", (
+            (True, True, 'subdir/', None),
+            (True, True, 'subdir/foo.txt', 'foo\n'),
+            (True, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\nd3b07384d113edec49eaa6238ad5ff00 *subdir/foo.txt\n'),
+        ),
+        (2, None, 1, 1, None, 1, 1, 0, 4,)
+    ),
+    (
+        ['-u', '-s', '-d'], 0, "update in subdir mode with missing file and deletion", (
+            (True, True, 'subdir/', None),
+            (True, True, 'subdir/foo.txt', 'foo\n'),
+            (True, False, 'Checksums.md5', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *foo.txt\nd3b07384d113edec49eaa6238ad5ff00 *subdir/foo.txt\n'),
+            (False, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *subdir/foo.txt\n'),
+        ),
+        (2, None, 1, 1, None, 1, None, None, 4,)
+    ),
+    (
+        ['-s'], 2, "check in subdir mode with incomplete checksum file", (
+            (True, True, 'subdir/', None),
+            (True, True, 'subdir/foo.txt', 'foo\n'),
+            (True, True, 'foo.txt', 'foo\n'),
+            (True, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *subdir/foo.txt\n'),
+        ),
+        (2, None, 1, None, 1, 1, 1, 0, 4,)
+    ),
+
+    (
+        ['-c', '-s'], 0, "create in subdir mode", (
+            (True, True, 'subdir/', None),
+            (True, True, 'subdir/foo.txt', 'foo\n'),
+            (True, True, 'foo.txt', 'foo\n'),
+            (False, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\nd3b07384d113edec49eaa6238ad5ff00 *subdir/foo.txt\n'),
+        ),
+        (2, None, None, None, None, 2, None, None, 8,)
+    ),
+    (
+        ['-u', '-s'], 0, "update in subdir mode with incorrect checksum, but old timestamp", (
+            (True, True, 'subdir/', None),
+            (True, True, 'subdir/foo.txt', 'foo\n'),
+            (True, True, 'foo.txt', 'foo\n'),
+            (True, False, 'Checksums.md5', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *foo.txt\n', -1),
+            (False, True, 'Checksums.md5', 'd3b07384d113edec49eaa6238ad5ff00 *foo.txt\nd3b07384d113edec49eaa6238ad5ff00 *subdir/foo.txt\n'),
+        ),
+        (2, None, 1, None, 1, 2, None, None, 8,)
+    ),
+    (
+        ['-u', '-s'], 0, "update in subdir mode with incorrect checksum, but newer timestamp", (
+            (True, True, 'subdir/', None),
+            (True, True, 'subdir/foo.txt', 'foo\n'),
+            (True, True, 'foo.txt', 'foo\n'),
+            (True, False, 'Checksums.md5', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *foo.txt\n', +1),
+            (False, True, 'Checksums.md5', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa *foo.txt\nd3b07384d113edec49eaa6238ad5ff00 *subdir/foo.txt\n'),
+        ),
+        (2, None, 1, None, 1, 1, None, None, 4,)
+    ),
+    # todo:
+    #   --skip und --limit, also with subdir mode
+    #   create with and without --overwrite
+    #   --ignore-subdir-checksums
 )
 
 PASSED = 0

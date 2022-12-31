@@ -243,7 +243,7 @@ class Output:  # {{{1
                     valueadd.append("{:0.1f} MiB/s".format(
                         State.total_hashed_bytes / 1048576 / duration
                         if duration != 0 else 0)
-                        )
+                    )
 
                 if valueadd:
                     value = "{} ({})".format(value, "; ".join(valueadd))
@@ -264,7 +264,7 @@ class Output:  # {{{1
                 label=stat[0],
                 labelwidth=labelwidth,
                 colon=":" if stat[1] != "" else "",
-                ), end="")
+            ), end="")
             value = f"{stat[1]:>{valuewidth}}"
             if len(stat) == 3:
                 Output.print((stat[2], value))
@@ -531,12 +531,15 @@ class ChecksumFiles:  # {{{1
                 print(
                     f"{checksum} *{filename}",
                     file=self._get_checksum_file_handle())
+                # TODO: handle cachen und dann schreiben, sonst landet es auf
+                # stdout
                 csfpath = self._path + ARGS.filename
                 if ARGS.update and self._csfiles:
                     self._entries[filename] = (checksum, csfpath)
                     self._updated_csfiles.add(csfpath)
                 self._modified = True
         except OSError as error:
+            # TODO: wenn veraltetes csfile 0444 hat, dann kommen zwei Fehlermeldungen
             ERR(csfpath,
                 msg=f"Could not write to checksum file ({error.args[1]}): ")
 
@@ -658,9 +661,6 @@ def parse_arguments():  # {{{1
         '-a', '--all', action='store_true',
         help='include hidden files and directories')
     group.add_argument(
-        '-f', '--force', action='store_true',
-        help='force processing of files in dirs with subdirs')
-    group.add_argument(
         '-l', '--follow-links', action='store_true',
         help='follow symlinks instead of ignoring them')
     group.add_argument(
@@ -668,6 +668,16 @@ def parse_arguments():  # {{{1
         help='do not cross filesystem boundaries')
 
     group = parser.add_argument_group(title="checksum file options")
+    exgroup = group.add_mutually_exclusive_group()
+    exgroup.add_argument(
+        '-f', '--force', action='store_true',
+        help='force processing of files in dirs with subdirs')
+    exgroup.add_argument(
+        '-s', '--subdirs', action='store_true',
+        help='use one checksum file per given directory and all its subdirs')
+    group.add_argument(
+        '--no-subdir-checksums', action='store_true',
+        help='only for use with -s: do not hash checksum files in subdirs')
     group.add_argument(
         '-F', '--filename', action='store', default='Checksums.md5',
         metavar='name',
@@ -683,10 +693,10 @@ def parse_arguments():  # {{{1
 
     group = parser.add_argument_group(title="directory selection options")
     group.add_argument(
-        '-n', '--number', action='store', default=-1, type=int, metavar='n',
+        '-N', '--number', action='store', default=-1, type=int, metavar='n',
         help='only process this many dirs (after the skipped ones)')
     group.add_argument(
-        '-s', '--skip', action='store', default=0, type=int, metavar='n',
+        '-S', '--skip', action='store', default=0, type=int, metavar='n',
         help='skip given number of dirs (to resume an aborted run)')
 
     group = parser.add_argument_group(title="output options")
@@ -713,7 +723,10 @@ def parse_arguments():  # {{{1
     if parsed_args.quiet > 0 and parsed_args.verbose:
         sys.exit("error: quiet and verbose options cannot be mixed.")
     parsed_args.quiet = min(3, parsed_args.quiet)
-    if parsed_args.filename != "all":
+    if parsed_args.filename == "all":
+        if parsed_args.subdirs:
+            sys.exit("error: -F all does not combine with -s.")
+    else:
         parsed_args.filename = os.path.basename(parsed_args.filename)
     if parsed_args.delete:
         if not any((parsed_args.paths, parsed_args.update)):
@@ -758,7 +771,7 @@ def do_hash(path):  # {{{1
     return md5.hexdigest()
 
 
-def gather_files(path, dirlist):  # {{{1
+def gather_files(root, subdir, dirlist, depth):  # {{{1
     """ Build sorted list of directories and files to process.
 
     Each entry is a tuple (path, size, filelist, checksum filelist). Directory
@@ -773,14 +786,17 @@ def gather_files(path, dirlist):  # {{{1
         ("/A/B/", 96, [("/A/B/foo", 32), ("/A/B/bar", 64)], ["Checksums.md5"])
     ]
 
-    :param str path: absolute path to the directory to examine
+    :param str root: absolute path to the directory to examine
+    :param str subdir: the path of the current dir, based on root, start at ''
     :param list dirlist: list of all directories thus far examined recusively
+    :param int level: the current recursion depth, starting at 0
     :return: the total size of all relevant files in the dir and its subdirs
     """
     # pylint: disable=too-many-branches
 
-    if not path.endswith(os.path.sep):
-        path += os.path.sep
+    if not root.endswith(os.path.sep):
+        root += os.path.sep
+    path = root + subdir
     if not os.path.isdir(path):
         return 0
     if ARGS.one_filesystem:
@@ -789,9 +805,11 @@ def gather_files(path, dirlist):  # {{{1
     totalsize = 0
 
     # get and categorise directory content {{{2
-    content = [item for item in os.listdir(path) if item[0] != "." or ARGS.all]
+    content = [item for item in os.listdir(path) if ARGS.all or item[0] != "."]
     dirs = []
     files = []
+    md5files = []
+
     for item in content:
         fullpath = path + item
         if os.path.islink(fullpath) and not ARGS.follow_links:
@@ -800,29 +818,28 @@ def gather_files(path, dirlist):  # {{{1
             if ARGS.one_filesystem:
                 if dev_inode != os.stat(fullpath).st_dev:
                     continue
-            dirs.append(item)
+            dirs.append(subdir + item if ARGS.subdirs else item)
         elif os.path.isfile(path + os.path.sep + item):
-            files.append(item)
-
-    # look for requested (or existing) checksum files {{{2
-    if ARGS.filename == "all":
-        md5files = [f for f in files if f.lower().endswith(".md5")]
-        md5files.sort()
-    else:
-        md5files = [ARGS.filename] if ARGS.filename in files else []
-    # and remove them from the files to be checked
-    for md5file in md5files:
-        files.remove(md5file)
+            if item.lower().endswith('.md5'):
+                if ARGS.filename == 'all':
+                    md5files.append(item)
+                elif item == ARGS.filename:
+                    if ARGS.subdirs and depth > 0:
+                        if not ARGS.no_subdir_checksums:
+                            files.append(subdir + item if ARGS.subdirs else item)
+                    else:
+                        md5files.append(item)
+            else:
+                files.append(subdir + item if ARGS.subdirs else item)
 
     # gather relevant list of files in this directory {{{2
-    if files and (not dirs or ARGS.force):
+    if ARGS.subdirs or files and (not dirs or ARGS.force):
         # only process if this dir is not excluded through constraint arguments
         if State.skip == 0 and State.limit != 0:
             files.sort()
+            itemdir = root if ARGS.subdirs else root + subdir
             for item in files:
-                fullpath = path + os.path.sep + item
-                size = os.path.getsize(fullpath)
-                totalsize += size
+                totalsize += os.path.getsize(itemdir + item)
             dirlist.append((path, totalsize, files, md5files))
             if State.limit != -1:
                 State.limit -= 1
@@ -835,7 +852,7 @@ def gather_files(path, dirlist):  # {{{1
     for item in dirs:
         if State.limit == 0:
             return totalsize
-        totalsize += gather_files(path + item + os.path.sep, dirlist)
+        totalsize += gather_files(root, subdir + item + os.path.sep, dirlist, depth + 1)
     return totalsize
 
 
@@ -888,7 +905,7 @@ def ask_delete_incomplete_checksum():  # {{{1
     return answer.lower() == "y"
 
 
-def directory_check(path, files, checksum_files):  # {{{1
+def directory_check(path, files, checksum_files, is_subdir=False):  # {{{1
     """
     Part 1 of directory hashing:
     Check whether conditions are met, print a messages if necessary.
@@ -900,7 +917,8 @@ def directory_check(path, files, checksum_files):  # {{{1
     """
 
     # want to verify checksums, but no checksum file available
-    if not ARGS.create and not ARGS.update and not checksum_files:
+    if not ARGS.create and not ARGS.update and \
+            not checksum_files and not is_subdir:
         if ARGS.quiet < 3 and not ARGS.no_missing_checksums:
             WARN("'{}'".format(
                 "." + path[len(CWD):] if path.startswith(CWD) else path),
@@ -954,12 +972,13 @@ def directory_progress(path, files, checksum_files):  # {{{1
     return True
 
 
-def directory_hash(path, files, checksum_files):  # {{{1
+def directory_hash(path, subdir, files, checksum_files):  # {{{1
     """
     Part 3 of directory hashing:
     The actual hashing and passing the result to checksum handler.
 
-    :param str path: absolute path to the relevant directory
+    :param str path: path to the dir. (checksum location in subdir mode)
+    :param str subdir: subdir mode: the subdir under the checksum location
     :param list files: the absolute paths to the files in the directory
     :param checksum_files: the object that encapsulates the checksum files
     """
@@ -970,7 +989,15 @@ def directory_hash(path, files, checksum_files):  # {{{1
         if ARGS.create:
             files_to_hash = files
         else:
-            files_to_hash = set(old_sums.keys())
+            if ARGS.subdirs:
+                # In subdir mode, the whole checksum file content is passed in
+                # for every subdirs. We want only the checksum entries that
+                # apply to this particular directory, so we need to filter out.
+                files_to_hash = set(
+                    f for f in old_sums if os.path.dirname(f) == subdir)
+            else:
+                # In non-subdir mode, a checksum file only serves this one dir.
+                files_to_hash = set(old_sums.keys())
             files_to_hash.update(files)
             files_to_hash = list(files_to_hash)
             files_to_hash.sort()
@@ -1084,32 +1111,44 @@ def main():  # {{{1
     # recurse every given directory
     try:
         total_size = 0
-        dirlist = []
+        # mapping of list of subdirectories to each directory cmdline argument
+        locations = {}
         if not ARGS.quiet:
             OUT("Gathering list of files...")
         for location in ARGS.locations:
-            location = os.path.abspath(location)
+            dirlist = []
+            location = os.path.abspath(location) + os.path.sep
+
             if not os.path.exists(location):
                 ERR("'" + location + "'", msg=">> does not exist: ")
             else:
-                total_size += gather_files(location, dirlist)
+                total_size += gather_files(location, '', dirlist, 0)
+            locations[location] = dirlist
 
-        if len(dirlist) == 0:
+        State.dircount = sum(map(len, locations.values()))
+        if State.dircount == 0:
             WARN("Nothing worth checking found.")
             sys.exit(0)
 
-        State.dircount = len(dirlist)
-        State.filecount = sum([len(directory[2]) for directory in dirlist])
-        max_files_per_dir = max(len(directory[2]) for directory in dirlist)
+        # total count of files for each dirlist for each location
+        State.filecount = sum(
+            sum(len(d[2]) for d in dirlist)
+            for dirlist in locations.values())
+        # maximum number of files in each directory for each dirlist for each location
+        max_files_per_dir = max(
+            max(len(d[2]) for d in dirlist)
+            for dirlist in locations.values())
         # find out how many characters are needed for the file count column
         State.dir_width = math.floor(math.log10(State.dircount) + 1)
-        State.file_width = math.floor(math.log10(State.filecount) + 1)
-        State.dirfiles_width = math.floor(math.log10(max_files_per_dir) + 1)
+        State.file_width = math.floor(math.log10(State.filecount) + 1) \
+            if State.filecount > 0 else 1
+        State.dirfiles_width = math.floor(math.log10(max_files_per_dir) + 1) \
+            if max_files_per_dir > 0 else 1
 
         if not ARGS.quiet:
             if ARGS.paths or ARGS.update:
                 OUT("Checking checksum consistency for "
-                    "{} {} in {} {}".format(
+                    "{} {} in {} {}...".format(
                         State.filecount, plural(State.filecount, "file"),
                         State.dircount, plural(State.dircount, "directory")))
             else:
@@ -1119,16 +1158,38 @@ def main():  # {{{1
                     human_readable_size(total_size)))
 
         starttime = time.time()
-        for dir_path, _, dir_files, dir_csfiles in dirlist:
-            State.dirnum += 1
-            if not directory_check(dir_path, dir_files, dir_csfiles):
-                continue
+        if ARGS.subdirs:
+            for location, dirlist in locations.items():
+                with ChecksumFiles(
+                        location,
+                        [ARGS.filename] if os.path.exists(
+                            location + ARGS.filename)
+                        else []) as checksums:
+                    for dir_path, _, dir_files, dir_csfiles in dirlist:
+                        State.dirnum += 1
+                        if not directory_check(
+                                dir_path, dir_files, dir_csfiles,
+                                is_subdir=location != dirlist[0]):
+                            continue
 
-            if not directory_progress(dir_path, dir_files, dir_csfiles):
-                continue
+                        if not directory_progress(
+                                dir_path, dir_files, dir_csfiles):
+                            continue
 
-            with ChecksumFiles(dir_path, dir_csfiles) as checksums:
-                directory_hash(dir_path, dir_files, checksums)
+                        directory_hash(location, dir_path.split(location)[1], dir_files, checksums)
+        else:
+            for dirlist in locations.values():
+                for dir_path, _, dir_files, dir_csfiles in dirlist:
+                    State.dirnum += 1
+                    if not directory_check(dir_path, dir_files, dir_csfiles):
+                        continue
+
+                    if not directory_progress(
+                            dir_path, dir_files, dir_csfiles):
+                        continue
+
+                    with ChecksumFiles(dir_path, dir_csfiles) as checksums:
+                        directory_hash(dir_path, '', dir_files, checksums)
 
     except KeyboardInterrupt:
         Output.clear_progress_text()
@@ -1148,7 +1209,7 @@ def main():  # {{{1
             State.files_missing and not ARGS.delete,
             State.not_in_md5 and not ARGS.update,
             State.md5_missing and not ARGS.no_missing_checksums
-            ]):
+    ]):
         sys.exit(2)
 
 
