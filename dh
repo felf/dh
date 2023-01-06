@@ -996,7 +996,7 @@ def directory_hash(path, subdir, files, checksum_files):  # {{{1
                     WARN("'{}' (listed in '{}')".format(
                         filename,
                         os.path.basename(old_sums[filename][1])
-                        if ARGS.quiet == 0 else old_sums[filename][1]),
+                        if ARGS.verbose else old_sums[filename][1]),
                         msg=">> file does not exist: ")
                 State.files_missing += 1
                 if ARGS.delete and any((ARGS.paths, ARGS.update)):
