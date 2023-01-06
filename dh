@@ -17,7 +17,7 @@ if sys.version_info < (3, 6):  # for fstrings
     sys.exit("A minimum Python version of 3.6 is required.")
 
 __prog_name__ = 'dh.py'
-__prog_version__ = "1.4.6"
+__prog_version__ = "1.4.7"
 
 CWD = os.getcwd()
 
