@@ -30,7 +30,7 @@ class Output:  # {{{1
     output_shown = False
     # whether each progress message shall appear on an own line
     progress_with_newline = False
-    # the text last shown as progress message
+    # the text last shown for progress ouput
     last_progress_text = ""
     # whether to show interactive and dynamic output
     isatty = False
@@ -880,7 +880,6 @@ def ask_delete_incomplete_checksum():  # {{{1
     :return: True if the file shall be deleted.
     """
 
-    # put a newline behind the dots
     while True:
         State.question_asked = True
         answer = Output.ask(
@@ -942,7 +941,6 @@ def directory_progress(path, files, checksum_files):  # {{{1
             "Processing {:>{}} files in {}".format(
                 len(files), State.dirfiles_width,
                 "." + path[len(CWD):] if path.startswith(CWD) else path))
-    # reduced output: only print a dot for each directory
     elif ARGS.quiet == 1:
         Output.progress("dir", State.dir_width, State.dirnum, State.dircount)
 

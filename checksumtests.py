@@ -415,7 +415,7 @@ def clean_up(path):
 
 
 def set_up_dirs(test_case):
-    """ Create the file tree specific to a test cast.
+    """ Create the file tree specific to a test case.
 
     :param test_case: tuple with test data (see definition of TEST_CASE)
     """
@@ -439,7 +439,7 @@ def set_up_dirs(test_case):
 def check_summary(dh_output, expected):
     """ Check whether dh outputs the expected values at the end
 
-    :param str dh_output: stdout of the teset run
+    :param str dh_output: stdout of the test run
     :param list expected: the expected values (see DH_OUTPUT_KEYS)
     """
 
