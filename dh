@@ -73,12 +73,12 @@ class Output:  # {{{1
         """
 
         if Output.isatty:
-            Output.clear_line()
+            Output.break_after_progress()
             return input(msg)
         raise Exception('Terminal is not interactive.')
 
     @staticmethod
-    def clear_line():  # {{{2
+    def break_after_progress():  # {{{2
         """ Print a newline if the last thing printed was a progress msg. """
 
         if Output.progress_last:
@@ -86,16 +86,16 @@ class Output:  # {{{1
             Output.progress_last = False
 
     @staticmethod
-    def clear_progress_text():  # {{{2
-        """ Reset the last progress text to empty. """
+    def clear_last_progress():  # {{{2
+        """ Leave the previous progress line or clear it for a new message. """
 
-        Output.last_progress_text = ""
-
-    @staticmethod
-    def erase_progress_text():  # {{{2
-        """ Overwrite last progress message with spaces. """
-
-        print(" " * len(Output.last_progress_text), end="\r")
+        if Output.last_progress_text:
+            if Output.progress_with_newline:
+                print()
+            else:
+                print(" " * len(Output.last_progress_text), end="\r")
+            Output.last_progress_text = ""
+            Output.progress_last = False
 
     @staticmethod
     def hms(duration):
@@ -128,12 +128,7 @@ class Output:  # {{{1
         :param int width: the overall width of the table
         """
 
-        if Output.isatty:
-            if Output.progress_with_newline:
-                if Output.output_shown:
-                    Output.clear_line()
-            else:
-                Output.erase_progress_text()
+        Output.clear_last_progress()
         if Output.output_shown:
             print("-" * width)
 
@@ -158,11 +153,7 @@ class Output:  # {{{1
     def print_line(*what, file=sys.stdout):  # {{{2
         """ Output the given message onto a new line. """
 
-        if Output.isatty:
-            if Output.progress_with_newline:
-                Output.clear_line()
-            else:
-                Output.erase_progress_text()
+        Output.clear_last_progress()
         Output.print(*what, file=file)
         Output.progress_last = False
         if Output.last_progress_text:
@@ -286,10 +277,8 @@ class Output:  # {{{1
         if not Output.isatty:
             return
 
-        if Output.progress_with_newline and Output.progress_last:
-            print()
-        else:
-            Output.erase_progress_text()
+        Output.clear_last_progress()
+
         Output.last_progress_text = \
             f"({what} {number:{width}} of {total}) {msg}"
         terminal_size = os.get_terminal_size()
@@ -315,8 +304,7 @@ class Output:  # {{{1
     def error(*arguments, msg=""):  # {{{2
         """ Convenience function: output a given message in error colour. """
 
-        Output.clear_line()
-        Output.clear_progress_text()
+        Output.clear_last_progress()
         if msg != "":
             Output.print_line(("Red", msg), *arguments, file=sys.stderr)
         else:
@@ -327,8 +315,7 @@ class Output:  # {{{1
     def warn(*arguments, msg=""):  # {{{2
         """ Convenience function: output a given message in warning colour. """
 
-        Output.clear_line()
-        Output.clear_progress_text()
+        Output.clear_last_progress()
         if msg != "":
             Output.print_line(("Yellow", msg), *arguments, file=sys.stderr)
         else:
@@ -1192,7 +1179,7 @@ def main():  # {{{1
                         directory_hash(dir_path, '', dir_files, checksums)
 
     except KeyboardInterrupt:
-        Output.clear_progress_text()
+        Output.clear_last_progress()
         if ARGS.create:
             WARN("\nHashing aborted.")
         else:
