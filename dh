@@ -26,8 +26,6 @@ class Output:  # {{{1
     """ Handle printing to the screen and the state of the output. """
 
     # variables {{{2
-    # whether the last thing printed was a progress dot
-    progress_last = False
     # whether anything was printed yet
     output_shown = False
     # whether each progress message shall appear on an own line
@@ -81,21 +79,24 @@ class Output:  # {{{1
     def break_after_progress():  # {{{2
         """ Print a newline if the last thing printed was a progress msg. """
 
-        if Output.progress_last:
+        if Output.last_progress_text:
             print("")
-            Output.progress_last = False
+            Output.last_progress_text = ""
 
     @staticmethod
-    def clear_last_progress():  # {{{2
-        """ Leave the previous progress line or clear it for a new message. """
+    def clear_last_progress(clear_str=True):  # {{{2
+        """ Leave the previous progress line or clear it for a new message.
+
+        :param clear_str: whether to clear last_progress_text
+        """
 
         if Output.last_progress_text:
             if Output.progress_with_newline:
                 print()
             else:
                 print(" " * len(Output.last_progress_text), end="\r")
-            Output.last_progress_text = ""
-            Output.progress_last = False
+            if clear_str:
+                Output.last_progress_text = ""
 
     @staticmethod
     def hms(duration):
@@ -153,11 +154,9 @@ class Output:  # {{{1
     def print_line(*what, file=sys.stdout):  # {{{2
         """ Output the given message onto a new line. """
 
-        Output.clear_last_progress()
+        Output.clear_last_progress(clear_str=False)
         Output.print(*what, file=file)
-        Output.progress_last = False
-        if Output.last_progress_text:
-            Output.reprint_progress()
+        Output.reprint_progress()
 
     @staticmethod
     def print_results(duration):  # {{{2
@@ -285,7 +284,6 @@ class Output:  # {{{1
         print("{text:{length}}\r".format(
             text=Output.last_progress_text,
             length=terminal_size.columns - 1), end="")
-        Output.progress_last = True
         Output.output_shown = True
         sys.stdout.flush()
 
