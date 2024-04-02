@@ -348,7 +348,7 @@ class ChecksumFiles:  # {{{1
         }
         # whether each file has its own checksum file
         self._separate = ARGS.filename == 'all'
-        # a dict of all checksums in the current checksum file (filename: hash)
+        # a dict of all checksums in the current checksum file
         # key: filename, value: tuple(hash, checksum file)
         self._entries = {}
         # items from _entries that shall be deleted at the end of update run
@@ -759,20 +759,28 @@ def do_hash(path):  # {{{1
 def gather_files(root, subdir, dirlist, depth):  # {{{1
     """ Build sorted list of directories and files to process.
 
-    Each entry is a tuple (path, size, filelist, checksum filelist). Directory
-    paths end with a path separator. The 'size' for directories is the summed
-    size of all the files to be hashed in that dir. Directories that don't
-    contain relevant files will not be listed, even if any of their
+    Each dirlist entry is a tuple (path, size, filelist, checksum filelist).
+    Directory paths end with a path separator. The 'size' for directories is
+    the summed size of all the files to be hashed in that dir. Directories that
+    don't contain relevant files will not be listed, even if any of their
     subdirectories actually do contain such files.
 
+    Example directory structure:
+        dir           /
+        dir           /A/
+        dir           /A/B/
+        file     --   /A/B/Checksums.md5
+        file     64   /A/B/bar
+        file     32   /A/B/foo
+        file   12345  /frotz
     The resulting dirlist looks like this:
     [
         ("/", 12345, ["/frotz", 12345], []),
         ("/A/B/", 96, [("/A/B/foo", 32), ("/A/B/bar", 64)], ["Checksums.md5"])
     ]
 
-    :param str root: absolute path to the directory to examine
-    :param str subdir: the path of the current dir, based on root, start at ''
+    :param str root: absolute path to the root directory of the tree
+    :param str subdir: the path of the current dir, based on root, starts at ''
     :param list dirlist: list of all directories thus far examined recusively
     :param int level: the current recursion depth, starting at 0
     :return: the total size of all relevant files in the dir and its subdirs
@@ -892,9 +900,10 @@ def ask_delete_incomplete_checksum():  # {{{1
 def directory_check(path, files, checksum_files, is_subdir=False):  # {{{1
     """
     Part 1 of directory hashing:
-    Check whether conditions are met, print a messages if necessary.
+    Check whether conditions are met to do hashing in this directory,
+    print a messages if necessary.
 
-    :param str path: absolute path to the relevant directory
+    :param str path: absolute path to the directory
     :param list files: the absolute paths to the files in the directory
     :param checksum_files: the object that encapsulates the checksum files
     :return: True if conditions are met, False otherwise
@@ -928,7 +937,7 @@ def directory_progress(path, files, checksum_files):  # {{{1
     Part 2 of directory hashing:
     Print progress message, then ask for overwriting checksum file, if needed.
 
-    :param str path: absolute path to the relevant directory
+    :param str path: absolute path to the directory
     :param list files: the absolute paths to the files in the directory
     :param checksum_files: the object that encapsulates the checksum files
     :return: True if user answers to not overwrite (hashing shall not run)
@@ -958,7 +967,7 @@ def directory_progress(path, files, checksum_files):  # {{{1
 def directory_hash(path, subdir, files, checksum_files):  # {{{1
     """
     Part 3 of directory hashing:
-    The actual hashing and passing the result to checksum handler.
+    The actual hashing of files and storing the result to checksums object.
 
     :param str path: path to the dir. (checksum location in subdir mode)
     :param str subdir: subdir mode: the subdir under the checksum location
@@ -1089,7 +1098,7 @@ def plural(number, singular_form, plural_form=""):  # {{{1
 
 def main():  # {{{1
     """ This is where everything comes together. """
-    # pylint: disable=too-many-branches
+    # pylint: disable=too-many-branches,too-many-statements
 
     # recurse every given directory
     try:
