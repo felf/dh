@@ -2,7 +2,7 @@ dh – dirhash
 ============
 
 https://github.com/felf/dh
-Copyright © 2013–2022 Frank Steinmetzger
+Copyright © 2013–2024 Frank Steinmetzger
 
 Synopsis
 --------
@@ -18,7 +18,7 @@ How to use dh
 -------------
 dh has a built-in help:
 
-    $ dh.py -h
+    $ dh -h
 
 Dh has three modes:
 * check mode, this is the default mode
@@ -32,18 +32,28 @@ default. It will verify the hash of every file listed in this file, and it will
 check whether there exist any files that are not listed in the checksum file.
 
 Using the --paths option, it skips the hashing and only checks the file names.
+Use this to quickly check your has files and prune them of cruft.
 
 In write mode, dh will hash all files in a directory and write the hashes to
 the checksum file. It ignores the content of pre-existing checksum files, but
 warns when it is about to overwrite one.
 
-In update mode, dh first does a quick paths-mode check, but it will also fix
-any errors it finds:
+In update mode, dh first does a quick paths-mode check, but it will also update
+a directory’s checksum file:
 
-* if a file is listed in the checksum file, but does not exist, the entry is
-  removed from the checksum file
-* if it is listed, but its modification time is newer, then it is rehashed
-* if a file is not listed in the checksum file, its hash gets added
+* if a file is already listed, but its modification time is newer than the
+  checksum file’s, then the file is rehashed
+* if a file is not listed in the checksum file, its hash is added
+
+To remove entries from existing checksum files because a file don’t exist
+anymore, use --update or --paths option in combination with --delete.
+
+Due to my own usage experience over the years, I think about removing write
+mode in favour of the more flexible update mode—or at least changing the
+default behaviour—because usually I do not need the all-or-nothing principle of
+write mode. Instead the normal use case is to either hash a completely new tree
+(then --update does the same as write mode anyways), or to update existing
+checksum files because a small portion of the data files has changed.
 
 Dh has a range of options to alter its behaviour:
 
@@ -53,6 +63,9 @@ Dh has a range of options to alter its behaviour:
 * the number of directories to be processed when dealing with large file
   hierarchies
 * output verbosity
+* there is a rather new (as of 2024) option -s to create a single checksum file
+  for an entire subtree. But auto-detection of such checksum files in check
+  mode is not yet finished.
 * and more
 
 How came dh into being?

@@ -222,7 +222,7 @@ class Output:  # {{{1
                                   human_readable_size(State.total_hashed_bytes)
                               )))
 
-            # --paths is fast, we don’t need times and total_hashed_bytes == 0
+            # --paths is fast, we don't need times and total_hashed_bytes == 0
             if not ARGS.paths:
                 value = f"{duration:3.1f} seconds"
                 valueadd = []
