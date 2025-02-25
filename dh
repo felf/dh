@@ -278,8 +278,11 @@ class Output:  # {{{1
 
         Output.clear_last_progress()
 
-        Output.last_progress_text = \
-            f"({what} {number:{width}} of {total}) {msg}"
+        if what == "Deleted":
+            Output.last_progress_text = f"({what}) {msg}"
+        else:
+            Output.last_progress_text = \
+                f"({what} {number:{width}} of {total}) {msg}"
         terminal_size = os.get_terminal_size()
         print("{text:{length}}\r".format(
             text=Output.last_progress_text,
@@ -1010,6 +1013,8 @@ def directory_hash(path, subdir, files, checksum_files):  # {{{1
                 State.files_missing += 1
                 if ARGS.delete and any((ARGS.paths, ARGS.update)):
                     checksum_files.remove_entry(filename)
+                    if ARGS.verbose:
+                        Output.progress("Deleted", 0, 0, 0, filename)
                 continue
 
             if filename not in old_sums:
