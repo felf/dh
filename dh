@@ -1023,8 +1023,8 @@ def directory_hash(path, subdir, files, checksum_files):  # {{{1
                     if not ARGS.update:
                         WARN(
                             # full directory path is already printed with
-                            # ARGS.quiet == 0, so don't repeat here
-                            filename if ARGS.quiet == 0 else fullpath,
+                            # ARGS.verbose, so don't repeat here
+                            f"'{filename}'" if ARGS.verbose else f"'{fullpath}'",
                             msg=">> not in any checksum file: ")
                         # nothing more to do in read-only check mode
                         continue
