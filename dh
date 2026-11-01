@@ -801,7 +801,10 @@ def gather_files(root, subdir, dirlist, depth):  # {{{1
     totalsize = 0
 
     # get and categorise directory content {{{2
-    content = [item for item in os.listdir(path) if ARGS.all or item[0] != "."]
+    content = [item for item in os.listdir(path) if ARGS.all or item[0] != "."
+               or item == ARGS.filename]
+    # the last check is for the special case that ARGS.filename is a dotfile
+    # but ARGS.all is False
     dirs = []
     files = []
     md5files = []

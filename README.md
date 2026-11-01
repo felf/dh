@@ -2,7 +2,7 @@ dh – dirhash
 ============
 
 https://github.com/felf/dh
-Copyright © 2013–2024 Frank Steinmetzger
+Copyright © 2013–2026 Frank Steinmetzger
 
 Synopsis
 --------
